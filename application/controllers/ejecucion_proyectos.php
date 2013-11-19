@@ -157,7 +157,7 @@ class Ejecucion_proyectos extends CI_Controller {
            {
               $editable=1;
            }
-           $tabla.='<tr class="Resaltado" onclick="revisarEjecucion('.
+           $tabla.='<tr class="Resaltado" onclick="revisarMetas('.
                             $proyectos[$i]['id_proyecto'].');" >';
            $tabla.='<td title="Código del Proyecto">';
            $tabla.=trim($proyectos[$i]['cod_proy']);
@@ -234,11 +234,6 @@ class Ejecucion_proyectos extends CI_Controller {
       $ae = str_repeat("0", 22).substr(trim($proy->cod_proy), 6);
       
       $ejecucion = $this->Proyectos->getEjecucionSigesp($proyecto, $ae, $uel);
-      if (count($ejecucion)==0) // NO HAY MOVIMIENTOS
-      {
-         $tabla='<h2><center>Proyecto sin Ejecución Registrada en SIGESP</center></h2>';
-         die($tabla);
-      }      
       
       // IDENTIFICACION
       $tabla='<table width="100%"><tr><td style="vertical-align:middle; text-align:left">';
@@ -271,8 +266,15 @@ class Ejecucion_proyectos extends CI_Controller {
                  class="BotonIco botoncito" title="Clic para revisar las metas físicas"
                  /></h4>';
       $tabla.='</td>';
-      $tabla.='</tr>';
+      $tabla.='</tr>';      
       $tabla.='</table>';
+      
+      // EN CASO DE NO HABER REGISTROS DE EJECUCION EN SIGESP
+      if (count($ejecucion)==0) // NO HAY MOVIMIENTOS
+      {
+         $tabla.='<h2><center>Proyecto sin Ejecución Registrada en SIGESP</center></h2>';
+         die($tabla);
+      }        
       
       // LISTADO
       $tabla.='<table class="TablaNivel1 Zebrado">';

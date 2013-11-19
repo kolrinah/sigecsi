@@ -98,6 +98,7 @@ class Productos extends CI_Model
      function obtener_subproducto($id_subprod)
      {           
         $sql="select p.id_producto, p.codigo as pcodigo, p.nombre as pnombre, p.definicion as pdefinicion,
+                     s.id_subproducto,
                      s.codigo as scodigo, s.nombre, s.definicion, s.es_determinado,
                      s.es_tramite, s.unidad_medida, s.activo, s.es_extraordinario,
                      e.id_estructura, e.codigo as ecodigo, e.descripcion as estructura
@@ -109,10 +110,32 @@ class Productos extends CI_Model
         $query = $this->db->query($sql);
         if($query->num_rows()>0)
         {
-           return $query->result_array();
+           return $query->row_array();
         }
         else {return false;}
      }
+     
+// OBTENER DETALLES DE LA PLANIFICACION DE UN SUBPRODUCTO A PARTIR DE SU id
+     function obtener_planificacion($id_plan_producto)
+     {           
+        $sql="select pp.*,
+                     p.codigo as pcodigo, p.nombre as pnombre, p.definicion as pdefinicion,                     
+                     s.codigo as scodigo, s.nombre, s.definicion, s.es_determinado,
+                     s.es_tramite, s.unidad_medida, s.activo, s.es_extraordinario,
+                     e.id_estructura, e.codigo as ecodigo, e.descripcion as estructura
+              from c_plan_productos pp
+              join c_subproductos s using(id_subproducto)
+              join c_productos p using(id_producto)
+              join e_estructura e using(id_estructura)
+              where id_plan_producto=$id_plan_producto";
+        
+        $query = $this->db->query($sql);
+        if($query->num_rows()>0)
+        {
+           return $query->row_array();
+        }
+        else {return false;}
+     }     
 
 // LISTAR DEPENDENCIAS DE UN SUBPRODUCTO
      function listar_dependencias($id_subprod)
@@ -173,54 +196,54 @@ class Productos extends CI_Model
                   (
                    select s.id_subproducto, 
                    sum(case 
-                       when date_part('month',c.fecha_fin)='01' then 1
+                       when date_part('month',c.fecha_fin)='01' then c.cantidad
                        else 0
                    end) as ene,
                    sum(case 
-                       when date_part('month',c.fecha_fin)='02' then 1
+                       when date_part('month',c.fecha_fin)='02' then c.cantidad
                        else 0
                    end) as feb,
                    sum(case 
-                       when date_part('month',c.fecha_fin)='03' then 1
+                       when date_part('month',c.fecha_fin)='03' then c.cantidad
                        else 0
                    end) as mar,
                    sum(case 
-                       when date_part('month',c.fecha_fin)='04' then 1
+                       when date_part('month',c.fecha_fin)='04' then c.cantidad
                        else 0
                    end) as abr,
                    sum(case 
-                       when date_part('month',c.fecha_fin)='05' then 1
+                       when date_part('month',c.fecha_fin)='05' then c.cantidad
                        else 0
                    end) as may,
                    sum(case 
-                       when date_part('month',c.fecha_fin)='06' then 1
+                       when date_part('month',c.fecha_fin)='06' then c.cantidad
                        else 0
                    end) as jun,
                    sum(case 
-                       when date_part('month',c.fecha_fin)='07' then 1
+                       when date_part('month',c.fecha_fin)='07' then c.cantidad
                        else 0
                    end) as jul,
                    sum(case 
-                       when date_part('month',c.fecha_fin)='08' then 1
+                       when date_part('month',c.fecha_fin)='08' then c.cantidad
                        else 0
                    end) as ago,
                    sum(case 
-                       when date_part('month',c.fecha_fin)='09' then 1
+                       when date_part('month',c.fecha_fin)='09' then c.cantidad
                        else 0
                    end) as sep,
                    sum(case 
-                       when date_part('month',c.fecha_fin)='10' then 1
+                       when date_part('month',c.fecha_fin)='10' then c.cantidad
                        else 0
                    end) as oct,
                    sum(case 
-                       when date_part('month',c.fecha_fin)='11' then 1
+                       when date_part('month',c.fecha_fin)='11' then c.cantidad
                        else 0
                    end) as nov,
                    sum(case 
-                       when date_part('month',c.fecha_fin)='12' then 1
+                       when date_part('month',c.fecha_fin)='12' then c.cantidad
                        else 0
                    end) as dic,
-                   count(c.fecha_fin) as anual
+                   sum(c.cantidad) as anual
                    from c_plan_productos c
                    join c_subproductos s using (id_subproducto)
                    where date_part('year',c.fecha_fin)='$yearpoa'
@@ -238,7 +261,8 @@ class Productos extends CI_Model
      {
         $sql="select * from
                	(select e.*, 
-               		p.codigo as pcodigo, p.nombre as pnombre, s.id_subproducto, s.codigo as scodigo, s.nombre as snombre
+               		p.codigo as pcodigo, p.nombre as pnombre, s.id_subproducto,
+                        s.codigo as scodigo, s.nombre as snombre, s.unidad_medida
                	 from c_subproductos s
                	 join c_productos p using (id_producto)
                	 join e_estructura e using (id_estructura)

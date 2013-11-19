@@ -263,164 +263,159 @@ class Adm_productos extends CI_Controller {
     {     
        if (!$this->input->is_ajax_request()) die('Acceso Denegado');
        $id_subprod= intval($this->input->post('id_subproducto')); 
-       $subproducto=$this->Productos->obtener_subproducto($id_subprod);
-       if (count($subproducto)!=1)  
-       {
-        die('Error');
-       }
+       $sp=$this->Productos->obtener_subproducto($id_subprod);
+       if (!$sp) die('Error');       
+              
+       $data='<div class="EntraDatos">';
+       $data.='<table>';
+       $data.='<thead>';
+       $data.='<tr><th colspan="2">';            
+       $data.='Editar Información del Sub-Producto Administrativo';         
+       $data.='</th></tr>';           
+       $data.='</thead>';            
+       $data.='<tbody>';
        
-       foreach ($subproducto as $fila)
-       {
-         $data='<div class="EntraDatos">';
-         $data.='<table>';
-         $data.='<thead>';
-         $data.='<tr><th colspan="2">';            
-         $data.='Editar Información del Sub-Producto Administrativo';         
-         $data.='</th></tr>';           
-         $data.='</thead>';            
-         $data.='<tbody>';
-         
-         $data.='<tr><td>';
-         $data.='<label>Código:</label>';
-         $data.='<input type="hidden" id="codProd" value="'.$fila['pcodigo'].'."/>';
-         $data.='<input type="text" class="Nom Editable" id="codSubProd" value="'.$fila['pcodigo'].'.'.$fila['scodigo'].'"';
-         $data.=' maxlength="9"';
-         //onlyDigits(e, value, allowDecimal, allowNegative, allowThousand, decSep, thousandSep, decLength)
-         $data.=' onkeypress="return onlyDigits(event, this.value,true,false,false,\'.\',\',\',2);"';
-         $data.=' onkeyup="return onlyDigits(event, this.value,true,false,false,\'.\',\',\',2);"';
-         $data.=' onblur="return onlyDigits(event, this.value,true,false,false,\'.\',\',\',2);"';
-         
-         $data.='/>';
-         $data.='<td>';
-         $data.='<label>Unidad de Medida:</label>';
-         $data.='<input type="text" class="Nom Editable" id="UMNvoS" tabindex="1002" title="Escriba la Unidad de Medida del Sub-Producto"';
-         $data.='value="'.$fila['unidad_medida'].'"/>';
-         $data.='</td></tr>';
-         
-         $data.='<tr><td colspan="2">';
-         $data.='<label>Nombre del Sub-Producto:</label>';
-         $data.='<textarea class="Nom Editable" id="nombreNvoS" rows="1" tabindex="1000" title="Escriba el Nombre del Sub-Producto">';
-         $data.=$fila['nombre'];
-         $data.='</textarea>';
-         $data.='</td></tr>';
-         $data.='<tr><td colspan="2">';
-         $data.='<label>Definición del Sub-Producto:</label>';
-         $data.='<textarea class="Nom Editable" id="defNvoS" rows="4" tabindex="1001" title="Escriba la Definición del Sub-Producto">';
-         $data.=$fila['definicion'];
-         $data.='</textarea>';
-         $data.='</td></tr>';            
-         $data.='<tr>';
-         $data.='<td width="40%">';
-         // BOTON DETERMINADO/INDETERMINADO
-              if ($fila['es_determinado']=='t')
-              {
-                  $datos=array(
-                              'img'  =>base_url()."imagenes/determinado.png",
-                              'span' => 'Sub-Producto Determinado',
-                              'valor'=>'t');
-              }
-              else
-              {
-                  $datos=array(
-                              'img'  =>base_url()."imagenes/indeterminado.png",
-                              'span' => 'Sub-Producto Indeterminado',
-                              'valor'=>'f');
-              }                 
-         $data.='<div class="ToggleBoton" onclick="javascript:ToggleBotonDet()" title="Haga clic para cambiar">';
-         $data.='<img id="imgDet" src="'.$datos['img'].'"/>';
-         $data.='</div>';
-         $data.='<span id="spanDet">&nbsp;'.$datos['span'].'</span>';
-         $data.='<input type="hidden" id="hideDet" value="'.$datos['valor'].'" />';
-         // FIN BOTON DETERMINADO/INDETERMINADO         
-         $data.='</td>';
-         $data.='<td>';         
-         // BOTON TRAMITE/NO TRAMITE
-              if ($fila['es_tramite']=='t')
-              {
-                  $datos=array(
-                              'img'  =>base_url()."imagenes/tramite.png",
-                              'span' => 'Trámite Administrativo a Terceros',
-                              'valor'=>'t');
-              }
-              else
-              {
-                  $datos=array(
-                              'img'  =>base_url()."imagenes/notramite.png",
-                              'span' => 'No es Trámite Administrativo a Terceros',
-                              'valor'=>'f');
-              }                 
-         $data.='<div class="ToggleBoton" onclick="javascript:ToggleBotonTra()" title="Haga clic para cambiar">';
-         $data.='<img id="imgTra" src="'.$datos['img'].'"/>';
-         $data.='</div>';
-         $data.='<span id="spanTra">&nbsp;'.$datos['span'].'</span>';
-         $data.='<input type="hidden" id="hideTra" value="'.$datos['valor'].'" />';
-         // FIN BOTON TRAMITE/NO TRAMITE         
-         $data.='</td>';
-         $data.='</tr>'; 
-         $data.='<tr>';
-         $data.='<td>';
-         // BOTON EXTRAORDINARIO/ORDINARIO
-              if ($fila['es_extraordinario']=='t')
-              {
-                  $datos=array(
-                              'img'  =>base_url()."imagenes/medalla.png",
-                              'span' => 'Sub-Producto Extraordinario',
-                              'valor'=>'t');
-              }
-              else
-              {
-                  $datos=array(
-                              'img'  =>base_url()."imagenes/lego.png",
-                              'span' => 'Sub-Producto Ordinario',
-                              'valor'=>'f');
-              }                 
-         $data.='<div class="ToggleBoton" onclick="javascript:ToggleBotonExtra()" title="Haga clic para cambiar">';
-         $data.='<img id="imgExtra" src="'.$datos['img'].'"/>';
-         $data.='</div>';
-         $data.='<span id="spanExtra">&nbsp;'.$datos['span'].'</span>';
-         $data.='<input type="hidden" id="hideExtra" value="'.$datos['valor'].'" />';
-         // FIN BOTON EXTRAORDINARIO/ORDINARIO
-         $data.='</td>';                  
-         $data.='<td>';          
-         // BOTON ACTIVO/INACTIVO
-              if ($fila['activo']=='t')
-              {
-                  $datos=array(
-                              'img'  =>base_url()."imagenes/activo16.png",
-                              'span' => 'Sub-Producto Activo',
-                              'valor'=>'t');
-              }
-              else
-              {
-                  $datos=array(
-                              'img'  =>base_url()."imagenes/cancel16.png",
-                              'span' => 'Sub-Producto Inactivo',
-                              'valor'=>'f');
-              }                 
-         $data.='<div class="ToggleBoton" onclick="javascript:ToggleBotonActivo()" title="Haga clic para cambiar">';
-         $data.='<img id="imgActivo" src="'.$datos['img'].'"/>';
-         $data.='</div>';
-         $data.='<span id="spanActivo">&nbsp;'.$datos['span'].'</span>';
-         $data.='<input type="hidden" id="hideActivo" value="'.$datos['valor'].'" />';
-         // FIN BOTON ACTIVO/INACTIVO         
-         $data.='</td>';        
-         $data.='</tr>';        
-         $data.='</tbody>';
-         $data.='<tfoot>';
-         $data.='<tr><td colspan="2">';
-         $data.='<div class="BotonIco" onclick="javascript:ActualizarSubproducto('.$id_subprod.','.$fila['id_producto'].')" title="Guardar Cambios">';
-         $data.='<img src="imagenes/guardar32.png"/>&nbsp;';   
-         $data.='Guardar';
-         $data.= '</div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
-         $data.='<div class="BotonIco" onclick="javascript:CancelarModal()" title="Cancelar">';
-         $data.='<img src="imagenes/cancel.png"/>&nbsp;';
-         $data.='Cancelar';
-         $data.= '</div>';
-         $data.='</td></tr>';
-         $data.='</tfoot>';
-         $data.='</table>';   
-         $data.='</div>';
-       }        
+       $data.='<tr><td>';
+       $data.='<label>Código:</label>';
+       $data.='<input type="hidden" id="codProd" value="'.$sp['pcodigo'].'."/>';
+       $data.='<input type="text" class="Nom Editable" id="codSubProd" value="'.$sp['pcodigo'].'.'.$sp['scodigo'].'"';
+       $data.=' maxlength="9"';
+       //onlyDigits(e, value, allowDecimal, allowNegative, allowThousand, decSep, thousandSep, decLength)
+       $data.=' onkeypress="return onlyDigits(event, this.value,true,false,false,\'.\',\',\',2);"';
+       $data.=' onkeyup="return onlyDigits(event, this.value,true,false,false,\'.\',\',\',2);"';
+       $data.=' onblur="return onlyDigits(event, this.value,true,false,false,\'.\',\',\',2);"';
+       
+       $data.='/>';
+       $data.='<td>';
+       $data.='<label>Unidad de Medida:</label>';
+       $data.='<input type="text" class="Nom Editable" id="UMNvoS" tabindex="1002" title="Escriba la Unidad de Medida del Sub-Producto"';
+       $data.='value="'.$sp['unidad_medida'].'"/>';
+       $data.='</td></tr>';
+       
+       $data.='<tr><td colspan="2">';
+       $data.='<label>Nombre del Sub-Producto:</label>';
+       $data.='<textarea class="Nom Editable" id="nombreNvoS" rows="1" tabindex="1000" title="Escriba el Nombre del Sub-Producto">';
+       $data.=$sp['nombre'];
+       $data.='</textarea>';
+       $data.='</td></tr>';
+       $data.='<tr><td colspan="2">';
+       $data.='<label>Definición del Sub-Producto:</label>';
+       $data.='<textarea class="Nom Editable" id="defNvoS" rows="4" tabindex="1001" title="Escriba la Definición del Sub-Producto">';
+       $data.=$sp['definicion'];
+       $data.='</textarea>';
+       $data.='</td></tr>';            
+       $data.='<tr>';
+       $data.='<td width="40%">';
+       // BOTON DETERMINADO/INDETERMINADO
+            if ($sp['es_determinado']=='t')
+            {
+                $datos=array(
+                            'img'  =>base_url()."imagenes/determinado.png",
+                            'span' => 'Sub-Producto Determinado',
+                            'valor'=>'t');
+            }
+            else
+            {
+                $datos=array(
+                            'img'  =>base_url()."imagenes/indeterminado.png",
+                            'span' => 'Sub-Producto Indeterminado',
+                            'valor'=>'f');
+            }                 
+       $data.='<div class="ToggleBoton" onclick="javascript:ToggleBotonDet()" title="Haga clic para cambiar">';
+       $data.='<img id="imgDet" src="'.$datos['img'].'"/>';
+       $data.='</div>';
+       $data.='<span id="spanDet">&nbsp;'.$datos['span'].'</span>';
+       $data.='<input type="hidden" id="hideDet" value="'.$datos['valor'].'" />';
+       // FIN BOTON DETERMINADO/INDETERMINADO         
+       $data.='</td>';
+       $data.='<td>';         
+       // BOTON TRAMITE/NO TRAMITE
+            if ($sp['es_tramite']=='t')
+            {
+                $datos=array(
+                            'img'  =>base_url()."imagenes/tramite.png",
+                            'span' => 'Trámite Administrativo a Terceros',
+                            'valor'=>'t');
+            }
+            else
+            {
+                $datos=array(
+                            'img'  =>base_url()."imagenes/notramite.png",
+                            'span' => 'No es Trámite Administrativo a Terceros',
+                            'valor'=>'f');
+            }                 
+       $data.='<div class="ToggleBoton" onclick="javascript:ToggleBotonTra()" title="Haga clic para cambiar">';
+       $data.='<img id="imgTra" src="'.$datos['img'].'"/>';
+       $data.='</div>';
+       $data.='<span id="spanTra">&nbsp;'.$datos['span'].'</span>';
+       $data.='<input type="hidden" id="hideTra" value="'.$datos['valor'].'" />';
+       // FIN BOTON TRAMITE/NO TRAMITE         
+       $data.='</td>';
+       $data.='</tr>'; 
+       $data.='<tr>';
+       $data.='<td>';
+       // BOTON EXTRAORDINARIO/ORDINARIO
+            if ($sp['es_extraordinario']=='t')
+            {
+                $datos=array(
+                            'img'  =>base_url()."imagenes/medalla.png",
+                            'span' => 'Sub-Producto Extraordinario',
+                            'valor'=>'t');
+            }
+            else
+            {
+                $datos=array(
+                            'img'  =>base_url()."imagenes/lego.png",
+                            'span' => 'Sub-Producto Ordinario',
+                            'valor'=>'f');
+            }                 
+       $data.='<div class="ToggleBoton" onclick="javascript:ToggleBotonExtra()" title="Haga clic para cambiar">';
+       $data.='<img id="imgExtra" src="'.$datos['img'].'"/>';
+       $data.='</div>';
+       $data.='<span id="spanExtra">&nbsp;'.$datos['span'].'</span>';
+       $data.='<input type="hidden" id="hideExtra" value="'.$datos['valor'].'" />';
+       // FIN BOTON EXTRAORDINARIO/ORDINARIO
+       $data.='</td>';                  
+       $data.='<td>';          
+       // BOTON ACTIVO/INACTIVO
+            if ($sp['activo']=='t')
+            {
+                $datos=array(
+                            'img'  =>base_url()."imagenes/activo16.png",
+                            'span' => 'Sub-Producto Activo',
+                            'valor'=>'t');
+            }
+            else
+            {
+                $datos=array(
+                            'img'  =>base_url()."imagenes/cancel16.png",
+                            'span' => 'Sub-Producto Inactivo',
+                            'valor'=>'f');
+            }                 
+       $data.='<div class="ToggleBoton" onclick="javascript:ToggleBotonActivo()" title="Haga clic para cambiar">';
+       $data.='<img id="imgActivo" src="'.$datos['img'].'"/>';
+       $data.='</div>';
+       $data.='<span id="spanActivo">&nbsp;'.$datos['span'].'</span>';
+       $data.='<input type="hidden" id="hideActivo" value="'.$datos['valor'].'" />';
+       // FIN BOTON ACTIVO/INACTIVO         
+       $data.='</td>';        
+       $data.='</tr>';        
+       $data.='</tbody>';
+       $data.='<tfoot>';
+       $data.='<tr><td colspan="2">';
+       $data.='<div class="BotonIco" onclick="javascript:ActualizarSubproducto('.$id_subprod.','.$sp['id_producto'].')" title="Guardar Cambios">';
+       $data.='<img src="imagenes/guardar32.png"/>&nbsp;';   
+       $data.='Guardar';
+       $data.= '</div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
+       $data.='<div class="BotonIco" onclick="javascript:CancelarModal()" title="Cancelar">';
+       $data.='<img src="imagenes/cancel.png"/>&nbsp;';
+       $data.='Cancelar';
+       $data.= '</div>';
+       $data.='</td></tr>';
+       $data.='</tfoot>';
+       $data.='</table>';   
+       $data.='</div>';
+            
        die($data);
     }
     

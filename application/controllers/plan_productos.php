@@ -286,7 +286,7 @@ class Plan_productos extends CI_Controller {
              $img='plan_add.png';
              $tabla.='<img src="'.base_url().'imagenes/'.$img.'" class="BotonIco" ';
              $tabla.='title="Clic para programar planificación" ';
-             $tabla.='onclick="javascript:AgregarActividad('.$planificacion[$i]['id_subproducto'].');" ';
+             $tabla.='onclick="javascript:agregarActividad('.$planificacion[$i]['id_subproducto'].');" ';
              $tabla.='/>';   
            }          
            $tabla.='</td>';
@@ -343,7 +343,7 @@ class Plan_productos extends CI_Controller {
                 $img='edit.png';
                 $tabla.='<img src="'.base_url().'imagenes/'.$img.'" class="BotonIco" ';
                 $tabla.='title="Clic para editar la Actividad" ';
-                $tabla.='onclick="javascript:EditarActividad('.$idsp.','.$idplan.');" />';
+                $tabla.='onclick="javascript:editarActividad('.$idplan.');" />';
               }          
              $tabla.='</td>';
              $tabla.='</tr>';
@@ -363,15 +363,44 @@ class Plan_productos extends CI_Controller {
     else return $tabla;
   }
   
-  function listar_usuarios()
+  function agregarActividad()
   {
-    if (!$this->input->is_ajax_request()) die('Acceso Denegado');       
-   
-    $id_estructura=intval($this->input->post('id_estructura'));
-    $id_responsable=intval($this->input->post('id_responsable'));
-           
-    $usuarios=$this->Usuarios->listar_usuarios($id_estructura);
-    if (!$usuarios)die('<option selected="selected" value="0">No Existen Usuarios</option>');
+    if (!$this->input->is_ajax_request()) die('Acceso Denegado'); 
+    
+    $id_sp = intval($this->input->post('id_sp'));
+    
+    // Obtenemos los datos del Sub-producto
+    $sp = $this->Productos->obtener_subproducto($id_sp);
+    
+    $data['sp'] = $sp;
+    
+    $data['usuarios'] = $this->_listar_usuarios($sp['id_estructura']);
+    
+    // CARGAMOS LA VISTA PARA AGREGAR ACTIVIDAD AL SUBPRODUCTO  
+    $this->load->view('plan_productos/agregarActividad',$data);    
+  }
+  
+  function editarActividad()
+  {
+    if (!$this->input->is_ajax_request()) die('Acceso Denegado'); 
+    
+    $id_plan = intval($this->input->post('id_plan'));
+    
+    // Obtenemos los datos del Sub-producto
+    $plan = $this->Productos->obtener_planificacion($id_plan);
+    
+    $data['plan'] = $plan;
+    
+    $data['usuarios'] = $this->_listar_usuarios($plan['id_estructura'], $plan['id_responsable'] );
+    
+    // CARGAMOS LA VISTA PARA EDITAR ACTIVIDAD DEL SUBPRODUCTO  
+    $this->load->view('plan_productos/editarActividad', $data);
+  }
+  
+  function _listar_usuarios($id_estructura, $id_responsable=0)
+  {           
+    $usuarios = $this->Usuarios->listar_usuarios($id_estructura);
+    if (!$usuarios)return '<option selected="selected" value="0">No Existen Usuarios en la Unidad</option>';
     $lista=($id_responsable==0)?'<option selected="selected" value="0">[Seleccione Usuario]</option>':'';
     foreach ($usuarios as $fila)
     {
@@ -386,7 +415,7 @@ class Plan_productos extends CI_Controller {
         $lista.='<option value="'.$iduser.'">'.$user.'</option>';
       }
     }        
-    die($lista);
+    return $lista;
   }
   
   function actualizar_actividad()
@@ -398,6 +427,7 @@ class Plan_productos extends CI_Controller {
                   );
       $datos=array(                
               'descripcion'    => $this->input->post('actividad'),
+              'cantidad'       => $this->input->post('cantidad'),
               'id_responsable' => $this->input->post('id_responsable'),
               'fecha_ini'      => $this->input->post('fecha_ini'),
               'fecha_fin'      => $this->input->post('fecha_fin')                
@@ -452,6 +482,7 @@ class Plan_productos extends CI_Controller {
         $datos=array(
                 'id_subproducto'=> $this->input->post('id_subprod'),
                 'descripcion'   => $this->input->post('descripcion'),
+                'cantidad'      => $this->input->post('cantidad'),
                 'id_responsable'=> $this->input->post('id_responsable'),
                 'fecha_ini'     => $this->input->post('fecha_ini'),
                 'fecha_fin'     => $this->input->post('fecha_fin'),
@@ -480,127 +511,122 @@ class Plan_productos extends CI_Controller {
   {
       if (!$this->input->is_ajax_request()) die('Acceso Denegado');
        $id_subprod= intval($this->input->post('id_subproducto')); 
-       $subproducto=$this->Productos->obtener_subproducto($id_subprod);
-       if (count($subproducto)!=1)  
-       {
-        die('Error');
-       }
-       
-      foreach ($subproducto as $fila)
-      {
-         $data='<div class="EntraDatos Info">';
-         $data.='<table>';
-         $data.='<thead>';
-         $data.='<tr><th colspan="2">';            
-         $data.='Información General del Sub-Producto Administrativo';
-         $data.='</th></tr>';
-         $data.='</thead>';
-         $data.='<tbody>';
-         $data.='<tr><td width="210px" style="text-align:right">';
-         $data.='<label>Unidad Administrativa:</label>';
-         $data.='</td>';
-         $data.='<td>';
-         $data.=$fila['ecodigo'].' - '.$fila['estructura'];
-         $data.='</td>';
-         $data.='</tr>';
-         $data.='<tr><td style="text-align:right">';
-         $data.='<label>Producto Administrativo:</label>';
-         $data.='</td>';
-         $data.='<td>';
-         $data.=$fila['pcodigo'].'. '.$fila['pnombre'];
-         $data.='</td>';
-         $data.='</tr>';
-         $data.='<tr>';
-         $data.='<td style="text-align:right">';
-         $data.='<label>Definición del Producto:</label>';
-         $data.='</td>';
-         $data.='<td>';
-         $data.=$fila['pdefinicion'];         
-         $data.='</td></tr>';
-         $data.='<tr>';
-         $data.='<td style="text-align:right">';
-         $data.='<label>Sub-Producto Administrativo:</label>';
-         $data.='</td>';
-         $data.='<td>';
-         $data.=$fila['pcodigo'].'.'.$fila['scodigo'].' '.$fila['nombre'];
-         $data.='</td></tr>';
-         $data.='<tr>';
-         $data.='<td style="text-align:right">';
-         $data.='<label>Definición del Sub-Producto:</label>';
-         $data.='</td>';
-         $data.='<td>';
-         $data.=$fila['definicion'];         
-         $data.='</td></tr>';
-         $data.='<tr>';
-         $data.='<td style="text-align:right">';
-         $data.='<label>Unidad de Medida:</label>';
-         $data.='</td>';
-         $data.='<td>';
-         $data.=$fila['unidad_medida'];
-         $data.='</td></tr>';
-         $data.='<tr>';
-         $data.='<td style="text-align:right">';
-         $data.='<label>Clasificación del Sub-Producto:</label>';
-         $data.='</td>';
-         $data.='<td>';
-         // DETERMINADO/INDETERMINADO
-              if ($fila['es_determinado']=='t')
-              {
-                  $datos=array(
-                              'img'  =>base_url()."imagenes/determinado.png",
-                              'span' => 'Sub-Producto Determinado');
-              }
-              else
-              {
-                  $datos=array(
-                              'img'  =>base_url()."imagenes/indeterminado.png",
-                             'span'  => 'Sub-Producto Indeterminado');
-              }         
-         $data.='<img src="'.$datos['img'].'"/>';
-         $data.='<span>&nbsp;'.$datos['span'].'</span><br/>';
-         // ORDINARIO/EXTRA-ORDINARIO
-              if ($fila['es_extraordinario']=='t')
-              {
-                  $datos=array(
-                              'img'  =>base_url()."imagenes/medalla.png",
-                              'span' => 'Sub-Producto Extraordinario');
-              }
-              else
-              {
-                  $datos=array(
-                              'img'  =>base_url()."imagenes/lego.png",
-                             'span'  => 'Sub-Producto Ordinario');
-              }         
-         $data.='<img src="'.$datos['img'].'"/>';
-         $data.='<span>&nbsp;'.$datos['span'].'</span><br/>';
-         // BOTON TRAMITE/NO TRAMITE
-              if ($fila['es_tramite']=='t')
-              {
-                  $datos=array(
-                              'img'  =>base_url()."imagenes/tramite.png",
-                              'span' => 'Trámite Administrativo a Terceros');                       
-              }
-              else
-              {
-                  $datos=array(
-                              'img'  =>base_url()."imagenes/notramite.png",
-                              'span' => 'No es Trámite Administrativo a Terceros');
-              }                  
-         $data.='<img src="'.$datos['img'].'"/>';
-         $data.='<span>&nbsp;'.$datos['span'].'</span><br/>';
-         $data.='</td></tr>';
-         $data.='</tbody>';
-         $data.='<tfoot>';
-         $data.='<tr><td colspan="2">';        
-         $data.='<div class="BotonIco" onclick="javascript:CancelarModal()" title="Cerrar Ventana">';
-         $data.='<img src="imagenes/cancel.png"/>&nbsp;';
-         $data.='Cerrar';
-         $data.= '</div>';
-         $data.='</td></tr>';
-         $data.='</tfoot>';
-         $data.='</table>';   
-         $data.='</div>';
-      }        
+       $sp=$this->Productos->obtener_subproducto($id_subprod);
+       if (!$sp) die('Error');       
+
+       $data='<div class="EntraDatos Info">';
+       $data.='<table>';
+       $data.='<thead>';
+       $data.='<tr><th colspan="2">';            
+       $data.='Información General del Sub-Producto Administrativo';
+       $data.='</th></tr>';
+       $data.='</thead>';
+       $data.='<tbody>';
+       $data.='<tr><td width="210px" style="text-align:right">';
+       $data.='<label>Unidad Administrativa:</label>';
+       $data.='</td>';
+       $data.='<td>';
+       $data.=$sp['ecodigo'].' - '.$sp['estructura'];
+       $data.='</td>';
+       $data.='</tr>';
+       $data.='<tr><td style="text-align:right">';
+       $data.='<label>Producto Administrativo:</label>';
+       $data.='</td>';
+       $data.='<td>';
+       $data.=$sp['pcodigo'].'. '.$sp['pnombre'];
+       $data.='</td>';
+       $data.='</tr>';
+       $data.='<tr>';
+       $data.='<td style="text-align:right">';
+       $data.='<label>Definición del Producto:</label>';
+       $data.='</td>';
+       $data.='<td>';
+       $data.=$sp['pdefinicion'];         
+       $data.='</td></tr>';
+       $data.='<tr>';
+       $data.='<td style="text-align:right">';
+       $data.='<label>Sub-Producto Administrativo:</label>';
+       $data.='</td>';
+       $data.='<td>';
+       $data.=$sp['pcodigo'].'.'.$sp['scodigo'].' '.$sp['nombre'];
+       $data.='</td></tr>';
+       $data.='<tr>';
+       $data.='<td style="text-align:right">';
+       $data.='<label>Definición del Sub-Producto:</label>';
+       $data.='</td>';
+       $data.='<td>';
+       $data.=$sp['definicion'];         
+       $data.='</td></tr>';
+       $data.='<tr>';
+       $data.='<td style="text-align:right">';
+       $data.='<label>Unidad de Medida:</label>';
+       $data.='</td>';
+       $data.='<td>';
+       $data.=$sp['unidad_medida'];
+       $data.='</td></tr>';
+       $data.='<tr>';
+       $data.='<td style="text-align:right">';
+       $data.='<label>Clasificación del Sub-Producto:</label>';
+       $data.='</td>';
+       $data.='<td>';
+       // DETERMINADO/INDETERMINADO
+            if ($sp['es_determinado']=='t')
+            {
+                $datos=array(
+                            'img'  =>base_url()."imagenes/determinado.png",
+                            'span' => 'Sub-Producto Determinado');
+            }
+            else
+            {
+                $datos=array(
+                            'img'  =>base_url()."imagenes/indeterminado.png",
+                           'span'  => 'Sub-Producto Indeterminado');
+            }         
+       $data.='<img src="'.$datos['img'].'"/>';
+       $data.='<span>&nbsp;'.$datos['span'].'</span><br/>';
+       // ORDINARIO/EXTRA-ORDINARIO
+            if ($sp['es_extraordinario']=='t')
+            {
+                $datos=array(
+                            'img'  =>base_url()."imagenes/medalla.png",
+                            'span' => 'Sub-Producto Extraordinario');
+            }
+            else
+            {
+                $datos=array(
+                            'img'  =>base_url()."imagenes/lego.png",
+                           'span'  => 'Sub-Producto Ordinario');
+            }         
+       $data.='<img src="'.$datos['img'].'"/>';
+       $data.='<span>&nbsp;'.$datos['span'].'</span><br/>';
+       // BOTON TRAMITE/NO TRAMITE
+            if ($sp['es_tramite']=='t')
+            {
+                $datos=array(
+                            'img'  =>base_url()."imagenes/tramite.png",
+                            'span' => 'Trámite Administrativo a Terceros');                       
+            }
+            else
+            {
+                $datos=array(
+                            'img'  =>base_url()."imagenes/notramite.png",
+                            'span' => 'No es Trámite Administrativo a Terceros');
+            }                  
+       $data.='<img src="'.$datos['img'].'"/>';
+       $data.='<span>&nbsp;'.$datos['span'].'</span><br/>';
+       $data.='</td></tr>';
+       $data.='</tbody>';
+       $data.='<tfoot>';
+       $data.='<tr><td colspan="2">';        
+       $data.='<div class="BotonIco" onclick="javascript:CancelarModal()" title="Cerrar Ventana">';
+       $data.='<img src="imagenes/cancel.png"/>&nbsp;';
+       $data.='Cerrar';
+       $data.= '</div>';
+       $data.='</td></tr>';
+       $data.='</tfoot>';
+       $data.='</table>';   
+       $data.='</div>';
+             
        die($data);
   }
   
