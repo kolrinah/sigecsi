@@ -31,8 +31,8 @@ class Ejecucion_productos extends CI_Controller {
     $year_poa=$ahora['year']; // El año inicial del POA es el año en curso para ejecución
     
     $data=array();
-    $data['titulo']='Planificación de Sub-Productos Determinados';
-    $data['subtitulo']='Planificación Operativa del Año:';
+    $data['titulo']='Ejecución de Sub-Productos Administrativos';
+    $data['subtitulo']='Ejecución Operativa del Año:';
     $data['year_poa']= array(      
                         'name' => 'year_poa',
                         'id' => 'year_poa',
@@ -77,7 +77,7 @@ class Ejecucion_productos extends CI_Controller {
     $data['script'].="\t".'<script type="text/javascript" src="'.base_url().'js/ejecucion_productos.js"></script>'."\n";
        
     $data['tabla']=$this->generar_tabla_ejecucion($year_poa);    
-    
+        
  // CARGAMOS LA VISTA   
     $this->load->view('plantillas/plantilla_general',$data);  
   }  
@@ -98,9 +98,9 @@ class Ejecucion_productos extends CI_Controller {
     }
     $estructuras=  substr($estructuras, 0, -3);
     unset($fila);    
-    $planificacion=$this->Productos->planificacion_productos($estructuras,$yearpoa);  
+    $planificacion=$this->Productos->ejecucion_productos($estructuras,$yearpoa);  
     
-    if ($planificacion->num_rows()==0) // SI NO HAY SUB-PRODUCTOS DETERMINADOS EN LA UNIDAD
+    if ($planificacion->num_rows()==0) // SI NO HAY SUB-PRODUCTOS EN LA UNIDAD
     { 
       $tabla='<h2><center>La Unidad No Posee Sub-Productos Determinados</center></h2>';      
       if ($this->input->is_ajax_request()) die($tabla); // Si la peticion vino por AJAX
@@ -119,14 +119,7 @@ class Ejecucion_productos extends CI_Controller {
         $tabla.='<table width="100%"><tr><td style="vertical-align:middle; text-align:left">';
         $tabla.='<h4>'.$planificacion[$i]['codigo'].' - '.$planificacion[$i]['descripcion'].'</h4>';
         $tabla.='</td>';
-        $tabla.='<td width="10%" style="vertical-align:middle; text-align:right; padding:0 10px 5px 0">';
-        $tope=strtotime($planificacion[$i]['fecha_tope']);
-        $ahora=time();        
-        $img=($ahora>$tope)?'cerrado.png':'abierto.png';        
-        
-        $tabla.='<img src="'.base_url().'imagenes/'.$img.'" ';
-        $tabla.='title="Fecha Tope: '.date("d/m/Y",strtotime($planificacion[$i]['fecha_tope'])).'"';
-        $tabla.='/>';
+        $tabla.='<td width="10%" style="vertical-align:middle; text-align:right; padding:0 10px 5px 0">';        
         $tabla.='</td>';
         $tabla.='</tr></table>';
         $tabla.='<table class="TablaNivel1 Zebrado">';
@@ -142,6 +135,13 @@ class Ejecucion_productos extends CI_Controller {
            $tabla.='</td>';          
            $tabla.='<td style="text-align:left" title="'.$titulo.'" onclick="javascript:VerInfo('.$idsp.')">';
            $tabla.=trim($planificacion[$i]['snombre']);
+           $tabla.='</td>';
+           $tabla.='<td style="text-align:left" >';
+           $tabla.='<img src="'.base_url().'imagenes/meta.png" '.'
+                     style="width:20px"
+                     onclick="javascript:revisarEjecucion('.$idsp.')"
+                     class="BotonIco botoncito" title="Clic para Revisar ejecución"
+                     />';
            $tabla.='</td>';
            $tabla.='<td title="Enero">';
            $tabla.=trim($planificacion[$i]['ene'])==''?0:trim($planificacion[$i]['ene']);
@@ -196,173 +196,163 @@ class Ejecucion_productos extends CI_Controller {
     else return $tabla;
   }
   
-  function generar_gantt_planes($yearpoa=0)
+  // Carga la ejecucion registrada para el subproducto y año dados
+  function revisarEjecucion()
   {
-    if ($this->input->is_ajax_request()) $yearpoa=$this->input->post('yearpoa'); // Si la peticion vino por AJAX
+    if (!$this->input->is_ajax_request()) die('Acceso Denegado');//Si la peticion NO vino por AJAX
     date_default_timezone_set('America/Caracas');
-    $id_estructura=$this->session->userdata('id_estructura');
-    $consulta=$this->Estructura->obtener_estructuras_inferiores($id_estructura);
-    if (!$consulta)die('error consultando estructuras inferiores');
-    $estructuras='where';
-    foreach ($consulta as $fila)
+    
+    $ahora=  getdate(time());
+    $year=$ahora['year']; // El año Actual
+    
+    $yearpoa = $this->input->post('yearpoa');
+    $id_subproducto = $this->input->post('id_subproducto');
+    
+    $subproducto = $this->Productos->obtener_subproducto($id_subproducto);
+    if (!$subproducto) die('ERROR: SUB-PRODUCTO NO EXISTE');
+    
+    // Boton de Registro de Ejecución
+    $botonRegistrar='';
+    if ($year == $yearpoa)
     {
-        $estructuras.= ' id_estructura='.$fila['id_estructura'].' or';
+      $botonRegistrar='<br/><center><div class="BotonIco" onclick="javascript:registrarEjecucion('.
+                        $id_subproducto.')" title="Registrar Ejecución">';
+      $botonRegistrar.='<img src="imagenes/meta.png" style="padding-top:4px"/>&nbsp;';   
+      $botonRegistrar.='Registrar';
+      $botonRegistrar.= '</div></center>';
     }
-    $estructuras=  substr($estructuras, 0, -3);
-    unset($fila);    
-    $planificacion=$this->Productos->gantt_productos($estructuras,$yearpoa);  
     
-    if ($planificacion->num_rows()==0) // SI NO HAY SUB-PRODUCTOS DETERMINADOS EN LA UNIDAD
-    { 
-      $tabla='<h2><center>La Unidad No Posee Sub-Productos Determinados</center></h2>';      
-      if ($this->input->is_ajax_request()) die($tabla); // Si la peticion vino por AJAX
-      else return $tabla;
-    }  
+    $encabezado = $this->load->view('ejecucion_productos/encabezadoSubproducto', $subproducto, true);  
     
-    $planificacion=$planificacion->result_array();
+    $ejecucion = $this->Productos->revisarEjecucion($id_subproducto, $yearpoa);
     
-    // CONSTRUIMOS LA TABLA CON EL RESUMEN DE LA PLANIFICACION DE SUB-PRODUCTOS DETERMINADOS    
-    $estructura=$planificacion[0]['id_estructura']; // OBTENGO LA PRIMERA ESTRUCTURA
-    $subpro=$planificacion[0]['id_subproducto'];  // OBTENGO EL PRIMER SUBPRODUCTO
-    $i=0;
-    $n=count($planificacion);
-    $tabla='';
-    while($i<$n)
+    $cuerpo='';
+    if ($ejecucion->num_rows()==0) // SI NO HAY REGISTROS DE EJECUCION
+        $cuerpo='<h2><center>Sub-Producto sin Registros de ejecución para este año</center></h2>';      
+    else 
     {
-        // DATOS DE LA ESTRUCTURA
-        $tabla.='<table width="100%"><tr><td style="vertical-align:middle; text-align:left">';
-        $tabla.='<h4>'.$planificacion[$i]['codigo'].' - '.$planificacion[$i]['descripcion'].'</h4>';
-        $tabla.='</td>';
-        $tabla.='<td width="10%" style="vertical-align:middle; text-align:right; padding:0 10px 5px 0">';
-        $tope=strtotime($planificacion[$i]['fecha_tope']);
-        $ahora=time();        
-        $img=($ahora>$tope)?'cerrado.png':'abierto.png';        
-        $tabla.='<img src="'.base_url().'imagenes/'.$img.'" ';
-        $tabla.='title="Fecha Tope: '.date("d/m/Y",strtotime($planificacion[$i]['fecha_tope'])).'"';
-        $tabla.='/>';
-        $tabla.='</td>';
-        $tabla.='</tr></table>';
-        // PLANIFICACION DE SUB-PRODUCTOS
-        $tabla.='<table class="TablaNivel1 Zebrado">';
-        $tabla.=$this->_cabecetabla();
-        $tabla.='<tbody>';          
-        // SUB-PRODUCTOS
-        while(($planificacion[$i]['id_estructura']==$estructura))
-        {           
-           $titulo=trim($planificacion[$i]['pcodigo']).'. '.trim($planificacion[$i]['pnombre']);
-           $idsp=$planificacion[$i]['id_subproducto'];   
-           
-           $tabla.='<tr class="Resaltado">';      
-           $tabla.='<td title="'.$titulo.'" id="codSP_'.$idsp.'" onclick="javascript:VerInfo('.$idsp.')">';
-           $tabla.=trim($planificacion[$i]['pcodigo']).'.'.trim($planificacion[$i]['scodigo']);
-           $tabla.='</td>';                     
-           $tabla.='<td style="text-align:left" title="'.$titulo.'" id="nomSP_'.$idsp.'" onclick="javascript:VerInfo('.$idsp.')">';
-           $tabla.=trim($planificacion[$i]['snombre']);
-           $tabla.='</td>';
-           $tabla.='<td class="Cuadricula" colspan="12">';
-           $tabla.='<input type="hidden" id="idEstructura_'.$idsp.'" ';
-           $tabla.='value="'.$estructura.'" />';
-           $tabla.='</td>';
-           $tabla.='<td style="vertical-align:middle">';
-           
-           $thisdate=  getdate($ahora);
-           if ($ahora<=$tope && $yearpoa>=$thisdate['year'])
-           {
-             $img='plan_add.png';
-             $tabla.='<img src="'.base_url().'imagenes/'.$img.'" class="BotonIco" ';
-             $tabla.='title="Clic para programar planificación" ';
-             $tabla.='onclick="javascript:AgregarActividad('.$planificacion[$i]['id_subproducto'].');" ';
-             $tabla.='/>';   
-           }          
-           $tabla.='</td>';
-           $tabla.='</tr>';           
-           // ACTIVIDADES
-           while ($subpro==$planificacion[$i]['id_subproducto'])
-           {
-             $idplan=$planificacion[$i]['id_plan_producto'];
-             $tabla.='<tr>';
-             $tabla.='<td>';
-             $tabla.='&nbsp';
-             $tabla.='</td>';            
-             $tabla.='<td style="text-align:left;">';             
-              
-              if ($planificacion[$i]['actividad']!='')
-              {
-                $fechai=date("d/m/Y",strtotime($planificacion[$i]['fecha_ini']));
-                $fechaf=date("d/m/Y",strtotime($planificacion[$i]['fecha_fin']));
-                $duracion=$this->comunes->diferenciaEntreFechas($planificacion[$i]['fecha_ini'], $planificacion[$i]['fecha_fin'], 'DIAS', true);
-                $tabla.='<span id="act_'.$idplan.'">'.trim($planificacion[$i]['actividad']).'</span><br/>';
-                $tabla.='<i>(Responsable: '.trim($planificacion[$i]['responsable']).' /';
-                $tabla.=' Duración: ';
-                $tabla.=($duracion<1)?1:$duracion;
-                $tabla.=($duracion<1)?' día) </i>':' días) </i>';                
-                $tabla.='<input type="hidden" id="fechaIni_'.$idplan.'" ';
-                $tabla.='value="'.$fechai.'" />';
-                $tabla.='<input type="hidden" id="fechaFin_'.$idplan.'" ';
-                $tabla.='value="'.$fechaf.'" />';
-                $tabla.='<input type="hidden" id="idResponsable_'.$idplan.'" ';
-                $tabla.='value="'.$planificacion[$i]['id_responsable'].'" />';
-              }
-                         
-             $tabla.='</td>';
-             $titulo='';
-             $gantt='*** SUB-PRODUCTO SIN PLANIFICACION PROGRAMADA ***';
-              if ($planificacion[$i]['actividad']!='')
-              {
-                $gantt=$this->comunes->mini_gantt($planificacion[$i]['fecha_ini'], $planificacion[$i]['fecha_fin'], 40);
-                $titulo='Desde: ';
-                $titulo.=date("d/m/Y",strtotime($planificacion[$i]['fecha_ini']));
-                $titulo.=' Hasta: ';
-                $titulo.=date("d/m/Y",strtotime($planificacion[$i]['fecha_fin']));
-              }
-             $tabla.='<td class="Cuadricula" colspan="12" title="'.$titulo.'">';
-             $tabla.='<div class="gantt01">';
-             $tabla.=$gantt;
-             $tabla.='</div>';
-             $tabla.='</td>';
-             $tabla.='<td style="vertical-align:middle">';
-             
-             $F=strtotime($planificacion[$i]['fecha_fin']);
-              if ($planificacion[$i]['actividad']!='' && $ahora<=$F && $ahora<=$tope)
-              {
-                $img='edit.png';
-                $tabla.='<img src="'.base_url().'imagenes/'.$img.'" class="BotonIco" ';
-                $tabla.='title="Clic para editar la Actividad" ';
-                $tabla.='onclick="javascript:EditarActividad('.$idsp.','.$idplan.');" />';
-              }          
-             $tabla.='</td>';
-             $tabla.='</tr>';
-             $i++;
-             if ($i==$n) break;
-           }
-           if ($i==$n) break;
-           $subpro=$planificacion[$i]['id_subproducto'];
-        }
-        //PIE DE TABLA
-        $tabla.='</tbody></table><br/><br/>';   
-        if ($i==$n) break;
-        $estructura=$planificacion[$i]['id_estructura'];                         
-    }         
+        $data['ejecucion'] = $ejecucion->result();
+        $cuerpo = $this->load->view('ejecucion_productos/registroEjecucion', $data, true);  
+    }    
     
-    if ($this->input->is_ajax_request()) die($tabla); // Si la peticion vino por AJAX
-    else return $tabla;
+    die($encabezado.$cuerpo.$botonRegistrar);
   }
   
-  function listar_usuarios()
+  // Revisión del registro de ejecución
+  function revisarRegistro()
   {
-    if (!$this->input->is_ajax_request()) die('Acceso Denegado');       
-   
-    $id_estructura=intval($this->input->post('id_estructura'));
-    $id_responsable=intval($this->input->post('id_responsable'));
-           
+    if (!$this->input->is_ajax_request()) die('Acceso Denegado');//Si la peticion NO vino por AJAX
+    date_default_timezone_set('America/Caracas');
+    
+    $ahora=  getdate(time());
+    $year = $ahora['year']; // El año Actual
+    
+    $yearpoa = $this->input->post('yearpoa');
+    $idEjecucion = $this->input->post('idEjecucion');
+    
+    $registro = $this->Productos->obtenerRegistro($idEjecucion);
+    if (!$registro) die('ERROR: REGISTRO NO EXISTE');
+    
+    $u = $this->_listar_usuarios($registro->id_estructura, $registro->id_usuario);
+    
+    $data['u'] = $u;
+    $data['registro'] = $registro;
+    $data['edicion'] = ($year == $yearpoa)? TRUE:FALSE;
+    
+    $this->load->view('ejecucion_productos/revisarRegistro',$data);
+  }
+  
+  function actualizarRegistro()
+  {
+      if (!$this->input->is_ajax_request()) die('Acceso Denegado');
+      
+      $donde=array(
+                'id_ejecucion'  => intval($this->input->post('idEjecucion'))       
+                  );
+      $datos=array(                
+              'descripcion'        => $this->input->post('descripcion'),
+              'cantidad_ejecutada' => $this->input->post('cantidadEjecutada'),
+              'id_usuario'         => $this->input->post('idUsuario'),
+              'fecha_ejecucion'    => $this->input->post('fechaEjecucion')              
+              );        
+      $actualizado=$this->Crud->actualizar_registro('c_ejec_productos', $datos, $donde);        
+      if (!$actualizado){die('Error');}
+      else 
+      {           
+         $registro='id_ejecucion: '.$donde['id_ejecucion'];         
+         $registro.='. Actualizado por: '.$this->session->userdata('usuario');
+         $bitacora=array(
+             'direccion_ip'   =>$this->session->userdata('ip_address'),
+             'navegador'      =>$this->session->userdata('user_agent'),
+             'id_usuario'     =>$this->session->userdata('id_usuario'),
+             'controlador'    =>$this->uri->uri_string(),
+             'tabla_afectada' =>'c_ejec_productos',
+             'tipo_accion'    =>'UPDATE',
+             'registro'       =>$registro
+         );
+         $this->Crud->insertar_registro('z_bitacora', $bitacora);            
+      };   
+  }
+  
+  // Registrar ejecución
+  function registrarEjecucion()
+  {
+    if (!$this->input->is_ajax_request()) die('Acceso Denegado');//Si la peticion NO vino por AJAX
+     
+    $idSp = $this->input->post('idSp');
+    
+    $sp = $this->Productos->obtener_subproducto($idSp);
+    if (!$sp) die('ERROR: SUB-PRODUCTO NO EXISTE');
+    
+    $u = $this->_listar_usuarios($sp['id_estructura']);
+    
+    $data['u'] = $u;
+    $data['sp'] = $sp;
+    
+    $this->load->view('ejecucion_productos/registrarEjecucion',$data);
+  }  
+  
+  // Guardar Registro de Ejecución
+  function guardarRegistro()
+  {   
+    if (!$this->input->is_ajax_request()) die('Acceso Denegado');        
+        $datos=array(
+                'id_subproducto'=> $this->input->post('idSp'),
+            'cantidad_ejecutada'=> $this->input->post('cantidadEjecutada'),
+                'descripcion'   => $this->input->post('descripcion'),
+                'id_usuario'    => $this->input->post('idUsuario'),
+              'fecha_ejecucion' => $this->input->post('fechaEjecucion')                
+                );
+        $insertado=$this->Crud->insertar_registro('c_ejec_productos', $datos);
+        if (!$insertado){die('Error');}
+        else
+        {
+           $registro='id_ejecucion: '.$this->db->insert_id();
+           $registro.='. '.$datos['descripcion'];           
+           $registro.='. Registrado por: '.$this->session->userdata('usuario');
+           $bitacora=array(
+               'direccion_ip'   =>$this->session->userdata('ip_address'),
+               'navegador'      =>$this->session->userdata('user_agent'),
+               'id_usuario'     =>$this->session->userdata('id_usuario'),
+               'controlador'    =>$this->uri->uri_string(),
+               'tabla_afectada' =>'c_ejec_productos',
+               'tipo_accion'    =>'INSERT',
+               'registro'       =>$registro
+           );
+           $this->Crud->insertar_registro('z_bitacora', $bitacora);             
+        }    
+  }
+  
+  function _listar_usuarios($id_estructura, $id_usuario=0)
+  {        
     $usuarios=$this->Usuarios->listar_usuarios($id_estructura);
-    if (!$usuarios)die('<option selected="selected" value="0">No Existen Usuarios</option>');
-    $lista=($id_responsable==0)?'<option selected="selected" value="0">[Seleccione Usuario]</option>':'';
+    if (!$usuarios)return '<option selected="selected" value="0">No Existen Usuarios</option>';
+    $lista=($id_usuario==0)?'<option selected="selected" value="0">[Seleccione Usuario]</option>':'';
     foreach ($usuarios as $fila)
     {
-      $user=$fila['nombre'].' '.$fila['apellido'];
-      $iduser=$fila['id_usuario'];
-      if ($fila['id_usuario']==$id_responsable)
+      $user = $fila['nombre'].' '.$fila['apellido'];
+      $iduser = $fila['id_usuario'];
+      if ($fila['id_usuario'] == $id_usuario)
       {
         $lista.='<option selected="selected" value="'.$iduser.'">'.$user.'</option>';
       }
@@ -371,228 +361,39 @@ class Ejecucion_productos extends CI_Controller {
         $lista.='<option value="'.$iduser.'">'.$user.'</option>';
       }
     }        
-    die($lista);
+    return $lista;
   }
   
-  function actualizar_actividad()
-  {
-      if (!$this->input->is_ajax_request()) die('Acceso Denegado');
-      
-      $donde=array(
-                'id_plan_producto'  => intval($this->input->post('id_plan'))       
-                  );
-      $datos=array(                
-              'descripcion'    => $this->input->post('actividad'),
-              'id_responsable' => $this->input->post('id_responsable'),
-              'fecha_ini'      => $this->input->post('fecha_ini'),
-              'fecha_fin'      => $this->input->post('fecha_fin')                
-              );        
-      $actualizado=$this->Crud->actualizar_registro('c_plan_productos', $datos, $donde);        
-      if (!$actualizado){die('Error');}
-      else 
-      {           
-         $registro='id_plan_producto: '.$donde['id_plan_producto'];         
-         $registro.='. Actualizado por: '.$this->session->userdata('usuario');
-         $bitacora=array(
-             'direccion_ip'   =>$this->session->userdata('ip_address'),
-             'navegador'      =>$this->session->userdata('user_agent'),
-             'id_usuario'     =>$this->session->userdata('id_usuario'),
-             'controlador'    =>$this->uri->uri_string(),
-             'tabla_afectada' =>'c_plan_productos',
-             'tipo_accion'    =>'UPDATE',
-             'registro'       =>$registro
-         );
-         $this->Crud->insertar_registro('z_bitacora', $bitacora);            
-      };   
-  }
- 
-  function eliminar_actividad()
+  function eliminarRegistro()
   {
     if (!$this->input->is_ajax_request()) die('Acceso Denegado');
-    $actividad=array(
-        'id_plan_producto' => intval($this->input->post('id_plan'))
+    $quien=array(
+        'id_ejecucion' => intval($this->input->post('idEjecucion'))
                    );        
-    $borrado=$this->Crud->eliminar_registro('c_plan_productos', $actividad);
+    $borrado=$this->Crud->eliminar_registro('c_ejec_productos', $quien);
     if (!$borrado){die('Error');}
     else
     {
-       $registro='id_plan_producto: '.$actividad['id_plan_producto'];           
+       $registro='id_ejecucion: '.$quien['id_ejecucion'];           
        $registro.='. Borrado por: '.$this->session->userdata('usuario');
        $bitacora=array(
            'direccion_ip'   =>$this->session->userdata('ip_address'),
            'navegador'      =>$this->session->userdata('user_agent'),
            'id_usuario'     =>$this->session->userdata('id_usuario'),
            'controlador'    =>$this->uri->uri_string(),
-           'tabla_afectada' =>'c_plan_productos',
+           'tabla_afectada' =>'c_ejec_productos',
            'tipo_accion'    =>'DELETE',
            'registro'       =>$registro
        );
        $this->Crud->insertar_registro('z_bitacora', $bitacora); 
     }
   }
-  
-  function guardar_actividad()
-  {   
-    if (!$this->input->is_ajax_request()) die('Acceso Denegado');        
-        $datos=array(
-                'id_subproducto'=> $this->input->post('id_subprod'),
-                'descripcion'   => $this->input->post('descripcion'),
-                'id_responsable'=> $this->input->post('id_responsable'),
-                'fecha_ini'     => $this->input->post('fecha_ini'),
-                'fecha_fin'     => $this->input->post('fecha_fin'),
-                );
-        $insertado=$this->Crud->insertar_registro('c_plan_productos', $datos);
-        if (!$insertado){die('Error');}
-        else
-        {
-           $registro='id_plan_producto: '.$this->db->insert_id();
-           $registro.='. '.$datos['descripcion'];           
-           $registro.='. Registrado por: '.$this->session->userdata('usuario');
-           $bitacora=array(
-               'direccion_ip'   =>$this->session->userdata('ip_address'),
-               'navegador'      =>$this->session->userdata('user_agent'),
-               'id_usuario'     =>$this->session->userdata('id_usuario'),
-               'controlador'    =>$this->uri->uri_string(),
-               'tabla_afectada' =>'c_plan_productos',
-               'tipo_accion'    =>'INSERT',
-               'registro'       =>$registro
-           );
-           $this->Crud->insertar_registro('z_bitacora', $bitacora);             
-        }    
-  }
-  
-  function ver_subproducto()
-  {
-      if (!$this->input->is_ajax_request()) die('Acceso Denegado');
-       $id_subprod= intval($this->input->post('id_subproducto')); 
-       $subproducto=$this->Productos->obtener_subproducto($id_subprod);
-       if (count($subproducto)!=1)  
-       {
-        die('Error');
-       }
-       
-      foreach ($subproducto as $fila)
-      {
-         $data='<div class="EntraDatos Info">';
-         $data.='<table>';
-         $data.='<thead>';
-         $data.='<tr><th colspan="2">';            
-         $data.='Información General del Sub-Producto Administrativo';
-         $data.='</th></tr>';
-         $data.='</thead>';
-         $data.='<tbody>';
-         $data.='<tr><td width="210px" style="text-align:right">';
-         $data.='<label>Unidad Administrativa:</label>';
-         $data.='</td>';
-         $data.='<td>';
-         $data.=$fila['ecodigo'].' - '.$fila['estructura'];
-         $data.='</td>';
-         $data.='</tr>';
-         $data.='<tr><td style="text-align:right">';
-         $data.='<label>Producto Administrativo:</label>';
-         $data.='</td>';
-         $data.='<td>';
-         $data.=$fila['pcodigo'].'. '.$fila['pnombre'];
-         $data.='</td>';
-         $data.='</tr>';
-         $data.='<tr>';
-         $data.='<td style="text-align:right">';
-         $data.='<label>Definición del Producto:</label>';
-         $data.='</td>';
-         $data.='<td>';
-         $data.=$fila['pdefinicion'];         
-         $data.='</td></tr>';
-         $data.='<tr>';
-         $data.='<td style="text-align:right">';
-         $data.='<label>Sub-Producto Administrativo:</label>';
-         $data.='</td>';
-         $data.='<td>';
-         $data.=$fila['pcodigo'].'.'.$fila['scodigo'].' '.$fila['nombre'];
-         $data.='</td></tr>';
-         $data.='<tr>';
-         $data.='<td style="text-align:right">';
-         $data.='<label>Definición del Sub-Producto:</label>';
-         $data.='</td>';
-         $data.='<td>';
-         $data.=$fila['definicion'];         
-         $data.='</td></tr>';
-         $data.='<tr>';
-         $data.='<td style="text-align:right">';
-         $data.='<label>Unidad de Medida:</label>';
-         $data.='</td>';
-         $data.='<td>';
-         $data.=$fila['unidad_medida'];
-         $data.='</td></tr>';
-         $data.='<tr>';
-         $data.='<td style="text-align:right">';
-         $data.='<label>Clasificación del Sub-Producto:</label>';
-         $data.='</td>';
-         $data.='<td>';
-         // DETERMINADO/INDETERMINADO
-              if ($fila['es_determinado']=='t')
-              {
-                  $datos=array(
-                              'img'  =>base_url()."imagenes/determinado.png",
-                              'span' => 'Sub-Producto Determinado');
-              }
-              else
-              {
-                  $datos=array(
-                              'img'  =>base_url()."imagenes/indeterminado.png",
-                             'span'  => 'Sub-Producto Indeterminado');
-              }         
-         $data.='<img src="'.$datos['img'].'"/>';
-         $data.='<span>&nbsp;'.$datos['span'].'</span><br/>';
-         // ORDINARIO/EXTRA-ORDINARIO
-              if ($fila['es_extraordinario']=='t')
-              {
-                  $datos=array(
-                              'img'  =>base_url()."imagenes/medalla.png",
-                              'span' => 'Sub-Producto Extraordinario');
-              }
-              else
-              {
-                  $datos=array(
-                              'img'  =>base_url()."imagenes/lego.png",
-                             'span'  => 'Sub-Producto Ordinario');
-              }         
-         $data.='<img src="'.$datos['img'].'"/>';
-         $data.='<span>&nbsp;'.$datos['span'].'</span><br/>';
-         // BOTON TRAMITE/NO TRAMITE
-              if ($fila['es_tramite']=='t')
-              {
-                  $datos=array(
-                              'img'  =>base_url()."imagenes/tramite.png",
-                              'span' => 'Trámite Administrativo a Terceros');                       
-              }
-              else
-              {
-                  $datos=array(
-                              'img'  =>base_url()."imagenes/notramite.png",
-                              'span' => 'No es Trámite Administrativo a Terceros');
-              }                  
-         $data.='<img src="'.$datos['img'].'"/>';
-         $data.='<span>&nbsp;'.$datos['span'].'</span><br/>';
-         $data.='</td></tr>';
-         $data.='</tbody>';
-         $data.='<tfoot>';
-         $data.='<tr><td colspan="2">';        
-         $data.='<div class="BotonIco" onclick="javascript:CancelarModal()" title="Cerrar Ventana">';
-         $data.='<img src="imagenes/cancel.png"/>&nbsp;';
-         $data.='Cerrar';
-         $data.= '</div>';
-         $data.='</td></tr>';
-         $data.='</tfoot>';
-         $data.='</table>';   
-         $data.='</div>';
-      }        
-       die($data);
-  }
-  
+    
   function _cabecetabla($total=false)
   {    
     $tabla='<thead><tr><th width="40px">Nº</th>';
     $tabla.='<th>Nombre del Sub-Producto</th>';
+    $tabla.='<th width="40px" ></th>';
     $tabla.='<th width="40px" title="Enero">E</th>';
     $tabla.='<th width="40px" title="Febrero">F</th>';
     $tabla.='<th width="40px" title="Marzo">M</th>';
@@ -610,6 +411,7 @@ class Ejecucion_productos extends CI_Controller {
     $tabla.='<tfoot><tr>';
     $tabla.='<td >Nº</td>';
     $tabla.='<td >Nombre del Sub-Producto</td>';
+    $tabla.='<td ></td>';
     $tabla.='<td title="Enero">E</td>';
     $tabla.='<td title="Febrero">F</td>';
     $tabla.='<td title="Marzo">M</td>';
