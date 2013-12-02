@@ -108,6 +108,28 @@ function metasActividadesProyecto(idProyecto)
     return false;
 }
 
+function menuReportePlan(id_proyecto)
+{
+    $.ajax({
+          type:'POST',
+          url:'reportes_consolidados/menuReportePlan',
+          data:{
+                'id_proyecto' : id_proyecto
+               },
+          beforeSend:function(){$("#cargandoModal").show();},
+          complete: function(){
+                      $("#cargandoModal").hide();},
+          error: function(){
+                      var Mensaje='Ha Ocurrido un Error al Intentar Cargar la Información.';
+                      CajaDialogo('Error', Mensaje);},
+          success: function(data){
+                      $('#VentanaModal').html(data);
+                      $('#VentanaModal').show();                      
+                   },
+          dataType:'html'});
+     return true;
+}
+
 function exportarPDF()
 {
    var yearpoa = $('#yearpoa').val();

@@ -630,6 +630,29 @@ class Proyectos extends CI_Model
         return $ejecucion;
      }      
      
+     // Obtiene el monto total ejecutado de un proyecto dado desde SIGESP
+     function getMontoEjecutadoSigesp($proyecto, $ae, $uel)
+     {         
+        $DB2 = $this->load->database('SIGESP', TRUE);  
+        $sql = "SELECT codestpro1, codestpro2, sum(compromiso) as ejecutado
+                FROM mayor_analitico
+                WHERE estcla = 'P'
+                AND operacion = 'CS'
+                AND codestpro1 = '$proyecto'
+                AND codestpro2 = '$ae'
+                -- AND codestpro3 = '$uel'
+                GROUP BY codestpro1, codestpro2";
+
+        $query = $DB2->query($sql);
+        
+        if($query->num_rows()>0)
+        {
+           $r = $query->row();
+           return $r->ejecutado;
+        }
+        else {return 0;}
+     }
+
      // CONEXION A SIMULACRO DE SIGESP PARA OBTENER EJECUCION DEL PROYECTO
      function  getEjecucionSigesp1($proyecto, $ae, $uel)
      {  
@@ -676,7 +699,135 @@ class Proyectos extends CI_Model
         }
         
         return $ejecucion;
-     } 
+     }
      
+     // EJECUCION PRESUPUESTARIA Y METAS FISICAS MES A MES
+     
+     function getEjecucionProyecto($id_proyecto)
+     {
+         $sql="SELECT codigo_ae||'.' ||codigo_act as cod_act, descripcion_act, um_act,
+                      e.*
+               FROM p_actividades
+               JOIN p_acciones using (id_accion)
+               JOIN p_proyectos using (id_proyecto)
+               LEFT JOIN (
+                          SELECT id_actividad, 
+                          SUM(CASE WHEN date_part('month',fecha)=1 THEN compromiso
+                              ELSE 0 END) as ene,
+                          SUM(CASE WHEN date_part('month',fecha)=2 THEN compromiso
+                              ELSE 0 END) as feb,
+                          SUM(CASE WHEN date_part('month',fecha)=3 THEN compromiso
+                              ELSE 0 END) as mar,
+                          SUM(CASE WHEN date_part('month',fecha)=4 THEN compromiso
+                              ELSE 0 END) as abr,
+                          SUM(CASE WHEN date_part('month',fecha)=5 THEN compromiso
+                              ELSE 0 END) as may,
+                          SUM(CASE WHEN date_part('month',fecha)=6 THEN compromiso
+                              ELSE 0 END) as jun,
+                          SUM(CASE WHEN date_part('month',fecha)=7 THEN compromiso
+                              ELSE 0 END) as jul,
+                          SUM(CASE WHEN date_part('month',fecha)=8 THEN compromiso
+                              ELSE 0 END) as ago,
+                          SUM(CASE WHEN date_part('month',fecha)=9 THEN compromiso
+                              ELSE 0 END) as sep,
+                          SUM(CASE WHEN date_part('month',fecha)=10 THEN compromiso
+                              ELSE 0 END) as oct, 
+                          SUM(CASE WHEN date_part('month',fecha)=11 THEN compromiso
+                              ELSE 0 END) as nov,
+                          SUM(CASE WHEN date_part('month',fecha)=12 THEN compromiso
+                              ELSE 0 END) as dic,
+                          SUM(compromiso) as total,
+                          SUM(CASE WHEN date_part('month',fecha_meta)=1 THEN cantidad_meta
+                              ELSE 0 END) as ene1,
+                          SUM(CASE WHEN date_part('month',fecha_meta)=2 THEN cantidad_meta
+                              ELSE 0 END) as feb1,
+                          SUM(CASE WHEN date_part('month',fecha_meta)=3 THEN cantidad_meta
+                              ELSE 0 END) as mar1,
+                          SUM(CASE WHEN date_part('month',fecha_meta)=4 THEN cantidad_meta
+                              ELSE 0 END) as abr1,
+                          SUM(CASE WHEN date_part('month',fecha_meta)=5 THEN cantidad_meta
+                              ELSE 0 END) as may1,
+                          SUM(CASE WHEN date_part('month',fecha_meta)=6 THEN cantidad_meta
+                              ELSE 0 END) as jun1,
+                          SUM(CASE WHEN date_part('month',fecha_meta)=7 THEN cantidad_meta
+                              ELSE 0 END) as jul1,
+                          SUM(CASE WHEN date_part('month',fecha_meta)=8 THEN cantidad_meta
+                              ELSE 0 END) as ago1,
+                          SUM(CASE WHEN date_part('month',fecha_meta)=9 THEN cantidad_meta
+                              ELSE 0 END) as sep1,
+                          SUM(CASE WHEN date_part('month',fecha_meta)=10 THEN cantidad_meta
+                              ELSE 0 END) as oct1, 
+                          SUM(CASE WHEN date_part('month',fecha_meta)=11 THEN cantidad_meta
+                              ELSE 0 END) as nov1,
+                          SUM(CASE WHEN date_part('month',fecha_meta)=12 THEN cantidad_meta
+                              ELSE 0 END) as dic1,
+                          SUM(cantidad_meta) as total1
+                          FROM p_ejecucion_presupuestaria
+                          LEFT JOIN p_ejecucion_fisica using(id_actividad)
+                          GROUP BY 1) e using (id_actividad)
+                          WHERE id_proyecto = $id_proyecto
+                    UNION
+                    SELECT 'TOTAL' as cod_act, '' as descripcion_act, '' as um_act, 0 as id_actividad,
+                    SUM(CASE WHEN date_part('month',fecha)=1 THEN compromiso
+                        ELSE 0 END) as ene,
+                    SUM(CASE WHEN date_part('month',fecha)=2 THEN compromiso
+                        ELSE 0 END) as feb,
+                    SUM(CASE WHEN date_part('month',fecha)=3 THEN compromiso
+                        ELSE 0 END) as mar,
+                    SUM(CASE WHEN date_part('month',fecha)=4 THEN compromiso
+                        ELSE 0 END) as abr,
+                    SUM(CASE WHEN date_part('month',fecha)=5 THEN compromiso
+                        ELSE 0 END) as may,
+                    SUM(CASE WHEN date_part('month',fecha)=6 THEN compromiso
+                        ELSE 0 END) as jun,
+                    SUM(CASE WHEN date_part('month',fecha)=7 THEN compromiso
+                        ELSE 0 END) as jul,
+                    SUM(CASE WHEN date_part('month',fecha)=8 THEN compromiso
+                        ELSE 0 END) as ago,
+                    SUM(CASE WHEN date_part('month',fecha)=9 THEN compromiso
+                        ELSE 0 END) as sep,
+                    SUM(CASE WHEN date_part('month',fecha)=10 THEN compromiso
+                        ELSE 0 END) as oct, 
+                    SUM(CASE WHEN date_part('month',fecha)=11 THEN compromiso
+                        ELSE 0 END) as nov,
+                    SUM(CASE WHEN date_part('month',fecha)=12 THEN compromiso
+                        ELSE 0 END) as dic,
+                    SUM(compromiso) as total,
+                    SUM(CASE WHEN date_part('month',fecha_meta)=1 THEN cantidad_meta
+                        ELSE 0 END) as ene1,
+                    SUM(CASE WHEN date_part('month',fecha_meta)=2 THEN cantidad_meta
+                        ELSE 0 END) as feb1,
+                    SUM(CASE WHEN date_part('month',fecha_meta)=3 THEN cantidad_meta
+                        ELSE 0 END) as mar1,
+                    SUM(CASE WHEN date_part('month',fecha_meta)=4 THEN cantidad_meta
+                        ELSE 0 END) as abr1,
+                    SUM(CASE WHEN date_part('month',fecha_meta)=5 THEN cantidad_meta
+                        ELSE 0 END) as may1,
+                    SUM(CASE WHEN date_part('month',fecha_meta)=6 THEN cantidad_meta
+                        ELSE 0 END) as jun1,
+                    SUM(CASE WHEN date_part('month',fecha_meta)=7 THEN cantidad_meta
+                        ELSE 0 END) as jul1,
+                    SUM(CASE WHEN date_part('month',fecha_meta)=8 THEN cantidad_meta
+                        ELSE 0 END) as ago1,
+                    SUM(CASE WHEN date_part('month',fecha_meta)=9 THEN cantidad_meta
+                        ELSE 0 END) as sep1,
+                    SUM(CASE WHEN date_part('month',fecha_meta)=10 THEN cantidad_meta
+                        ELSE 0 END) as oct1, 
+                    SUM(CASE WHEN date_part('month',fecha_meta)=11 THEN cantidad_meta
+                        ELSE 0 END) as nov1,
+                    SUM(CASE WHEN date_part('month',fecha_meta)=12 THEN cantidad_meta
+                        ELSE 0 END) as dic1,
+                    SUM(cantidad_meta) as total1
+                    FROM p_ejecucion_presupuestaria
+                    LEFT JOIN p_ejecucion_fisica using(id_actividad)
+                    LEFT JOIN p_actividades using (id_actividad)
+                    LEFT JOIN p_acciones using (id_accion)
+                    LEFT JOIN p_proyectos using (id_proyecto)
+                    WHERE id_proyecto=$id_proyecto
+                    GROUP BY 1,2,3,4
+                    ORDER BY 1 ASC";
+        $query = $this->db->query($sql);
+        return $query;
+     }
 }
 ?>

@@ -116,7 +116,7 @@ class Acceso extends CI_Controller {
                   redirect('acceso/cambiar_clave','refresh');  
                   exit(0);
               }
-              redirect('plan_productos','refresh');  
+              redirect('ejecucion_productos','refresh');  
               exit(0);
             }
             else

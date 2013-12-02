@@ -365,6 +365,109 @@ class Productos extends CI_Model
         if($query->num_rows()==1){return $query->row_array();}
         else {return false;}
      }
+ 
+// OBTENER LA EJECUCION DE PRODUCTOS DE UNA ESTRUCTURA Y AÑO DADOS     
+     function ejecucion_productos($estructuras,$yearpoa )
+     {
+        $sql="select *
+              from
+                  (select e.*, s.id_subproducto, p.codigo as pcodigo, s.es_determinado,
+                          p.nombre as pnombre, s.codigo as scodigo, s.nombre as snombre
+                   from c_subproductos s
+                   join c_productos p using (id_producto)
+                   join e_estructura e using (id_estructura)
+                   where s.activo=true) h
+              left join 
+                  (
+                   select s.id_subproducto, 
+                   sum(case 
+                       when date_part('month',c.fecha_ejecucion)='01' then c.cantidad_ejecutada
+                       else 0
+                   end) as ene,
+                   sum(case 
+                       when date_part('month',c.fecha_ejecucion)='02' then c.cantidad_ejecutada
+                       else 0
+                   end) as feb,
+                   sum(case 
+                       when date_part('month',c.fecha_ejecucion)='03' then c.cantidad_ejecutada
+                       else 0
+                   end) as mar,
+                   sum(case 
+                       when date_part('month',c.fecha_ejecucion)='04' then c.cantidad_ejecutada
+                       else 0
+                   end) as abr,
+                   sum(case 
+                       when date_part('month',c.fecha_ejecucion)='05' then c.cantidad_ejecutada
+                       else 0
+                   end) as may,
+                   sum(case 
+                       when date_part('month',c.fecha_ejecucion)='06' then c.cantidad_ejecutada
+                       else 0
+                   end) as jun,
+                   sum(case 
+                       when date_part('month',c.fecha_ejecucion)='07' then c.cantidad_ejecutada
+                       else 0
+                   end) as jul,
+                   sum(case 
+                       when date_part('month',c.fecha_ejecucion)='08' then c.cantidad_ejecutada
+                       else 0
+                   end) as ago,
+                   sum(case 
+                       when date_part('month',c.fecha_ejecucion)='09' then c.cantidad_ejecutada
+                       else 0
+                   end) as sep,
+                   sum(case 
+                       when date_part('month',c.fecha_ejecucion)='10' then c.cantidad_ejecutada
+                       else 0
+                   end) as oct,
+                   sum(case 
+                       when date_part('month',c.fecha_ejecucion)='11' then c.cantidad_ejecutada
+                       else 0
+                   end) as nov,
+                   sum(case 
+                       when date_part('month',c.fecha_ejecucion)='12' then c.cantidad_ejecutada
+                       else 0
+                   end) as dic,
+                   sum(c.cantidad_ejecutada) as anual
+                   from c_ejec_productos c
+                   join c_subproductos s using (id_subproducto)
+                   where date_part('year',c.fecha_ejecucion)='$yearpoa'
+                   group by 1
+                   ) pl using (id_subproducto)
+              $estructuras
+              order by id_estructura, cast(pcodigo as integer), cast(scodigo as integer);";
+        
+        $query = $this->db->query($sql);        
+        return $query;
+     }     
      
+     function revisarEjecucion($id_subproducto, $yearpoa)
+     {
+        $sql="select ej.*, s.unidad_medida, u.nombre, u.apellido
+              from c_ejec_productos ej
+              join c_subproductos s using(id_subproducto)
+              join a_usuarios u using(id_usuario)
+              where date_part('year',ej.fecha_ejecucion) = $yearpoa
+              and id_subproducto = $id_subproducto
+              order by ej.fecha_ejecucion asc;";
+        
+        $query = $this->db->query($sql);        
+        return $query;
+     }
+     
+     function obtenerRegistro($idEjecucion)
+     {
+        $sql="select e.*, s.unidad_medida, t.id_estructura
+              from c_ejec_productos e
+              join c_subproductos s using(id_subproducto)
+              join c_productos p using(id_producto)
+              join e_estructura t using(id_estructura)
+              where e.id_ejecucion = $idEjecucion ;";
+        
+        $query = $this->db->query($sql);       
+        
+        if($query->num_rows()==1){return $query->row();}
+        else {return false;}
+     }
 }
 ?>

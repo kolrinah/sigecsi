@@ -170,7 +170,13 @@ class Reportes_ejecucion extends CI_Controller {
       $tabla.=number_format($p->total, 2, ',','.');
       $tabla.='</td>';
       $tabla.='<td style="text-align:right!important; ">';
-      $tabla.=number_format($p->ejecutado, 2, ',','.');
+      
+      $montoSigesp = $this->_getMontoEjecutadoSigesp(trim($p->cod_proy), 
+                                                     trim($p->codigo));
+      
+      $tabla.=number_format($montoSigesp, 2, ',','.');
+           
+      //$tabla.=number_format($p->ejecutado, 2, ',','.');
       $tabla.='</td>';
       $tabla.='<td>';
       $mp=isset($p->meta_planificada)?$p->meta_planificada:1;
@@ -181,7 +187,8 @@ class Reportes_ejecucion extends CI_Controller {
       $tabla.=number_format($meta, 2, ',','.').' %';
       $tabla.='</td>';
       $tabla.='</tr>';
-      $ejecutado+=$p->ejecutado;
+      //$ejecutado+=$p->ejecutado;
+      $ejecutado+=$montoSigesp;
       $planificado+=$p->total;
     }
     //PIE DE TABLA
@@ -351,5 +358,16 @@ class Reportes_ejecucion extends CI_Controller {
       
       die ($tabla);
   }    
+  
+  // Obetenemos el monto en Bs ejecutado del proyecto desde SIGESP
+  function _getMontoEjecutadoSigesp($codProy, $codUnidad)
+  {      
+      // Igualamos los códigos al formato de SIGESP
+      $uel = str_repeat("0", 19).$codUnidad;
+      $proyecto = str_repeat("0", 21).substr(trim($codProy), 2, 4);
+      $ae = str_repeat("0", 22).substr(trim($codProy), 6);
+      
+      return $this->Proyectos->getMontoEjecutadoSigesp($proyecto, $ae, $uel);
+  }
   
 }

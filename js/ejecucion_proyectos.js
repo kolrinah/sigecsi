@@ -200,7 +200,7 @@ function fechaPicker(fechaMeta)
                            nextText:"Sig",
                            defaultDate: _DiaHoy(),
                            minDate: "01/01/"+$('#year_poa').val(),
-                           maxDate: "31/12/"+$('#year_poa').val(),
+                           maxDate: _DiaHoy(),
                            dayNames:[ "Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado" ],
                            dayNamesMin:[ "Do", "Lu", "Ma", "Mi", "Ju", "Vi", "Sa" ],
                            monthNames:["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"],

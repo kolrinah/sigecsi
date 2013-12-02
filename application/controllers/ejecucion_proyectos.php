@@ -142,6 +142,8 @@ class Ejecucion_proyectos extends CI_Controller {
         $tabla.='<th style="text-align:right; width:130px;">';
         $tabla.='EJECUTADO (Bs.)';
         $tabla.='</th>';                
+        $tabla.='<th style="width:30px;">';
+        $tabla.='</th>';
         $tabla.='<th width="150px">';
         $tabla.='METAS FÍSICAS (%)'; 
         $tabla.='</th>';                
@@ -168,9 +170,22 @@ class Ejecucion_proyectos extends CI_Controller {
            $tabla.='<td title="Presupuesto Planificado" style="text-align:right;">';
            $tabla.=number_format($proyectos[$i]['total'], 2, ',','.');
            $tabla.='</td>'; 
-           $tabla.='<td title="Presupuesto Ejecutado" style="text-align:right;" >';
-           $tabla.=number_format($proyectos[$i]['ejecutado'], 2, ',','.');
-           $tabla.='</td>';                                 
+           $tabla.='<td title="Presupuesto Ejecutado SIGESP" style="text-align:right;" >';
+           
+           $montoSigesp = $this->_getMontoEjecutadoSigesp(trim($proyectos[$i]['cod_proy']), 
+                                                          trim($proyectos[$i]['codigo']));
+           $tabla.=number_format($montoSigesp, 2, ',','.');
+           
+           $montoSigecsi = $proyectos[$i]['ejecutado'];           
+       
+           $tabla.='</td>';
+           $tabla.='<td>';
+           if ($montoSigesp > $montoSigecsi)
+           {
+              $tabla.='<img src="'.base_url().
+                      'imagenes/desconocido.png" title="Registros sin relacionar" />';
+           }    
+           $tabla.='</td>';
            $tabla.='<td title="% de Cumplimiento de la Metas Físicas">';
            
            $mp=isset($proyectos[$i]['meta_planificada'])?$proyectos[$i]['meta_planificada']:1;
@@ -199,7 +214,9 @@ class Ejecucion_proyectos extends CI_Controller {
         $tabla.='</td>';
         $tabla.='<td style="text-align:right;">';
         $tabla.='EJECUTADO (Bs.)';
-        $tabla.='</td>';                
+        $tabla.='</td>';
+        $tabla.='<td>';
+        $tabla.='</td>';
         $tabla.='<td>';
         $tabla.='METAS FÍSICAS (%)'; 
         $tabla.='</td>';        
@@ -212,6 +229,17 @@ class Ejecucion_proyectos extends CI_Controller {
     
     if ($this->input->is_ajax_request()) die($tabla); // Si la peticion vino por AJAX
     else return $tabla;
+  }
+  
+  // Obetenemos el monto en Bs ejecutado del proyecto desde SIGESP
+  function _getMontoEjecutadoSigesp($codProy, $codUnidad)
+  {      
+      // Igualamos los códigos al formato de SIGESP
+      $uel = str_repeat("0", 19).$codUnidad;
+      $proyecto = str_repeat("0", 21).substr(trim($codProy), 2, 4);
+      $ae = str_repeat("0", 22).substr(trim($codProy), 6);
+      
+      return $this->Proyectos->getMontoEjecutadoSigesp($proyecto, $ae, $uel);
   }
   
   function revisar_ejecucion()
@@ -777,7 +805,7 @@ class Ejecucion_proyectos extends CI_Controller {
       // Si no estamos en el año en curso, no puede hacer cambios en la ejecución
       date_default_timezone_set('America/Caracas'); // Establece la Hora de Venezuela para funciones de fecha y hora
       $ahora=  getdate(time()); // año en curso      
-      $yearEjec=date("Y",strtotime($actividad->fecha_ini));
+      $yearEjec=isset($actividad->fecha_ini)? date("Y",strtotime($actividad->fecha_ini)):$ahora['year'];
       
       if ($yearEjec==$ahora['year'])        
       {

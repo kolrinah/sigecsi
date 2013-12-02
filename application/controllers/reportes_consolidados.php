@@ -314,7 +314,8 @@ class Reportes_consolidados extends CI_Controller {
     while($i<$n)
     {
         // ENCABEZADOS DE TABLA
-        $tabla.='<table width="100%"><tr><td style="vertical-align:middle; text-align:left">';
+        $tabla.='<table width="100%"><tr>
+                    <td style="vertical-align:middle; text-align:left" colspan="6">';
         $tabla.='<h4>'.$insumos[$i]->partida_generica.' - '. 
                 mb_convert_case($insumos[$i]->tipo_insumo,MB_CASE_UPPER).'</h4>';
         $tabla.='</td>';
@@ -422,7 +423,8 @@ class Reportes_consolidados extends CI_Controller {
     while($i<$n)
     {
         // ENCABEZADOS DE TABLA
-        $tabla.='<table width="100%"><tr><td style="vertical-align:middle; text-align:left">';
+        $tabla.='<table width="100%"><tr>
+                 <td style="vertical-align:middle; text-align:left" colspan="6">';
         $tabla.='<h4>'.(($personal[$i]->accion_centralizada=='t')?
                             'Personal Requerido por Acción Centralizada':
                             'Personal Requerido por Proyectos').'</h4>';
@@ -556,13 +558,9 @@ class Reportes_consolidados extends CI_Controller {
     $tabla.='<th style="text-align:right!important; width:120px;">';
     $tabla.='APROBADO (Bs.)';
     $tabla.='</th>';
-    $tabla.='<th style="text-align:right!important; width:120px;">';
+    $tabla.='<th style="text-align:right!important; width:120px; padding-right:5px">';
     $tabla.='PLANIFICADO (Bs.)';    
-    $tabla.='</th>';  
-    $tabla.='<th style="width:50px;">';
-    $tabla.='</th>';  
-    $tabla.='<th style="width:50px;">';    
-    $tabla.='</th>'; 
+    $tabla.='</th>';      
     $tabla.='</tr>';
     $tabla.='</thead>';
     $tabla.='<tbody>';
@@ -573,7 +571,7 @@ class Reportes_consolidados extends CI_Controller {
     { 
       $r=$this->comunes->analisis_proyecto($p->monto_aprobado, $p->total, $p->estatus); 
    
-      $tabla.='<tr class="Resaltado">';
+      $tabla.='<tr class="Resaltado" onclick="javascript:menuReportePlan('.$p->id_proyecto.');">';
       $tabla.='<td>';      
       $tabla.=$p->codigo;
       $tabla.='</td>'; 
@@ -591,26 +589,7 @@ class Reportes_consolidados extends CI_Controller {
       $tabla.='</td>';
       $tabla.='<td style="text-align:right!important; ">';
       $tabla.=number_format($p->total, 2, ',','.');
-      $tabla.='</td>';
-      $tabla.='<td>';
-      $js = ($r['ok'])? $js = "presupuestoProyecto($p->id_proyecto)":
-                              "presupuestoProyecto(0)";   
-      $accion=' onclick="'.$js.'" ';
-      $img='presupactiv.png';
-      $tabla.='<img src="'.base_url().'imagenes/'.$img.'" ';
-      $tabla.='title="Distribución Presupuestaria del Proyecto"'.$accion;
-      $tabla.='/>';        
-      $tabla.='</td>';
-      $tabla.='<td>';
-      
-      $js = ($r['ok'])? $js = "metasActividadesProyecto($p->id_proyecto)":
-                              "metasActividadesProyecto(0)"; 
-      $accion=' onclick="'.$js.'" ';
-      $img='programacion20.png';
-      $tabla.='<img src="'.base_url().'imagenes/'.$img.'" ';
-      $tabla.='title="Metas de Actividades del Proyecto"'.$accion;
-      $tabla.='/>';        
-      $tabla.='</td>';      
+      $tabla.='</td>';        
       $tabla.='</tr>';
       $aprobado+=$p->monto_aprobado;
       $planificado+=$p->total;
@@ -627,11 +606,7 @@ class Reportes_consolidados extends CI_Controller {
     $tabla.='</td>';    
     $tabla.='<td style="text-align:right!important;">'; 
     $tabla.=number_format($planificado, 2, ',', '.'); 
-    $tabla.='</td>';   
-    $tabla.='<td>'; 
-    $tabla.='</td>'; 
-    $tabla.='<td>';    
-    $tabla.='</td>';     
+    $tabla.='</td>';         
     $tabla.='</tr>';
     $tabla.='</tfoot>';
     $tabla.='</table><br/><br/>';   
@@ -726,17 +701,10 @@ class Reportes_consolidados extends CI_Controller {
      if (!$this->input->is_ajax_request()) die('Acceso Denegado'); 
      
      $id_proyecto= intval($this->input->post('id_proyecto'));
-     $query=$this->Proyectos->obtener_presupuesto_proyecto_x_partidas($id_proyecto);
-    
-     if ($query->num_rows() === 0) // SI NO HAY PRESUPUESTO
-     { 
-       $tabla='<h2><center>Proyecto sin Programación Presupuestaria</center></h2>';      
-       die($tabla);
-     }       
-     
-     $presupuesto=$query->result();
-    
-     $proyecto=$this->Proyectos->obtener_proyecto($id_proyecto);
+
+     $p = $this->Proyectos->obtener_proyecto($id_proyecto);     
+     if (!$p)die('ERROR. PROYECTO NO EXISTE');
+          
      // Campo oculto con el tipo de Reporte
      $tabla='<input type="hidden" id="tipoReporte" value="2"/>';
      // CONSTRUIMOS LA TABLA
@@ -745,23 +713,34 @@ class Reportes_consolidados extends CI_Controller {
      $tabla.='<tr>';
      $tabla.='<td>';     
      $tabla.='<img class="BotonIco" src="'.base_url().'imagenes/back.png" ';
-     $tabla.=' onclick="location.reload();" ';
+     $tabla.=' onclick="actualiza();" ';
      $tabla.=' title="clic para regresar al listado de Proyectos" ';
      $tabla.='/>&nbsp;';
      $tabla.='</td>';
-     $tabla.='<td style="text-align:right;"> UNIDAD:&nbsp; </td>';
-     $tabla.='<td style="text-align:right; padding-right:5px"> '.$proyecto->codigo.'</td>';
-     $tabla.='<td>'.$proyecto->descripcion.'<br/>'.$proyecto->superior.'</td>';     
+     $tabla.='<td style="text-align:right; vertical-align:top"> UNIDAD:&nbsp; </td>';
+     $tabla.='<td style="text-align:right; padding-right:5px; vertical-align:top"> '.
+                    $p->codigo.'</td>';
+     $tabla.='<td colspan="3">'.$p->descripcion.'<br/>'.$p->superior.'</td>';     
      $tabla.='</tr>';
      $tabla.='<tr>';
-     $tabla.='<td colspan="2" style="text-align:right; font-weight:bold ">';
+     $tabla.='<td colspan="2" style="text-align:right; font-weight:bold; vertical-align:top">';
      $tabla.='PROYECTO:&nbsp; </td>';
-     $tabla.='<td style="text-align:right;font-weight:bold; padding-right:5px"">'.
-             $proyecto->cod_proy.'</td>';
-     $tabla.='<td style="font-weight:bold"> '.$proyecto->obj_esp.'</td>';
+     $tabla.='<td style="text-align:right;font-weight:bold; padding-right:5px; vertical-align:top">'.
+             $p->cod_proy.'</td>';
+     $tabla.='<td style="font-weight:bold" colspan="3"> '.$p->obj_esp.'</td>';
      $tabla.='</tr>';
      $tabla.='</table><br/>';
    
+     $query=$this->Proyectos->obtener_presupuesto_proyecto_x_partidas($id_proyecto);
+    
+     if ($query->num_rows() === 0) // SI NO HAY PRESUPUESTO
+     { 
+       $tabla.='<h2><center>Proyecto sin Programación Presupuestaria</center></h2>';      
+       die($tabla);
+     }       
+     
+     $presupuesto=$query->result();
+     
      // ENCABEZADOS DE TABLA       
      $tabla.='<table class="TablaNivel1">';
      $tabla.='<thead>';
@@ -769,10 +748,10 @@ class Reportes_consolidados extends CI_Controller {
      $tabla.='<th width="120px" >';
      $tabla.='PARTIDA';
      $tabla.='</th>';
-     $tabla.='<th>';
+     $tabla.='<th colspan="3">';
      $tabla.='DENOMINACIÓN';
      $tabla.='</th>';
-     $tabla.='<th width="200px" style="text-align:right">';
+     $tabla.='<th width="200px" style="text-align:right" >';
      $tabla.='MONTO (Bs.)';   
      $tabla.='</th>';
      $tabla.='<th width="30px">';
@@ -790,10 +769,10 @@ class Reportes_consolidados extends CI_Controller {
            $tabla.='<tr>';
            $tabla.='<td>';
            $tabla.='</td>';
-           $tabla.='<td style="text-align: right;">';
+           $tabla.='<td style="text-align: right;" colspan="3">';
            $tabla.='PRESUPUESTO TOTAL (Bs.)';
            $tabla.='</td>';
-           $tabla.='<td style="text-align: right">';
+           $tabla.='<td style="text-align: right" >';
            $tabla.=number_format($p->monto, 2,',', '.');
            $tabla.='</td>';
            $tabla.='<td>';
@@ -813,10 +792,10 @@ class Reportes_consolidados extends CI_Controller {
            $tabla.='<td>';
            $tabla.=$p->id_partida;
            $tabla.='</td>';
-           $tabla.='<td style="text-align:left">';
+           $tabla.='<td style="text-align:left" colspan="3">';
            $tabla.=$p->denominacion;
            $tabla.='</td>';
-           $tabla.='<td style="text-align:right">';
+           $tabla.='<td style="text-align:right" >';
            $tabla.=number_format($p->monto, 2,',', '.');
            $tabla.='</td>';
            $tabla.='<td>';
@@ -834,17 +813,10 @@ class Reportes_consolidados extends CI_Controller {
      if (!$this->input->is_ajax_request()) die('Acceso Denegado'); 
      
      $id_proyecto= intval($this->input->post('id_proyecto'));
-     $query=$this->Proyectos->obtener_metas_actividades_proyecto($id_proyecto);
-    
-     if ($query->num_rows() === 0) // SI NO HAY DATOS
-     { 
-       $tabla='<h2><center>Proyecto sin Programación de Actividades</center></h2>';      
-       die($tabla);
-     }       
      
-     $datos=$query->result();
-    
-     $proyecto=$this->Proyectos->obtener_proyecto($id_proyecto);
+     $p = $this->Proyectos->obtener_proyecto($id_proyecto);     
+     if (!$p)die('ERROR. PROYECTO NO EXISTE');
+        
      // Campo oculto con el tipo de Reporte
      $tabla='<input type="hidden" id="tipoReporte" value="3"/>';
      // CONSTRUIMOS LA TABLA
@@ -853,23 +825,33 @@ class Reportes_consolidados extends CI_Controller {
      $tabla.='<tr>';
      $tabla.='<td>';     
      $tabla.='<img class="BotonIco" src="'.base_url().'imagenes/back.png" ';
-     $tabla.=' onclick="location.reload();" ';
+     $tabla.=' onclick="actualiza();" ';
      $tabla.=' title="clic para regresar al listado de Proyectos" ';
      $tabla.='/>&nbsp;';
      $tabla.='</td>';
-     $tabla.='<td style="text-align:right;"> UNIDAD:&nbsp; </td>';
-     $tabla.='<td style="text-align:right; padding-right:5px"> '.$proyecto->codigo.'</td>';
-     $tabla.='<td>'.$proyecto->descripcion.'<br/>'.$proyecto->superior.'</td>';     
+     $tabla.='<td style="text-align:right; vertical-align:top"> UNIDAD:&nbsp; </td>';
+     $tabla.='<td style="text-align:right; padding-right:5px; vertical-align:top"> '.
+             $p->codigo.'</td>';
+     $tabla.='<td colspan="13">'.$p->descripcion.'<br/>'.$p->superior.'</td>';     
      $tabla.='</tr>';
      $tabla.='<tr>';
      $tabla.='<td colspan="2" style="text-align:right; font-weight:bold ">';
      $tabla.='PROYECTO:&nbsp; </td>';
      $tabla.='<td style="text-align:right;font-weight:bold; padding-right:5px"">'.
-             $proyecto->cod_proy.'</td>';
-     $tabla.='<td style="font-weight:bold"> '.$proyecto->obj_esp.'</td>';
+             $p->cod_proy.'</td>';
+     $tabla.='<td style="font-weight:bold"  colspan="13"> '.$p->obj_esp.'</td>';
      $tabla.='</tr>';
      $tabla.='</table><br/>';
-   
+
+     $query=$this->Proyectos->obtener_metas_actividades_proyecto($id_proyecto);
+    
+     if ($query->num_rows() === 0) // SI NO HAY DATOS
+     { 
+       $tabla.='<h2><center>Proyecto sin Programación de Actividades</center></h2>';      
+       die($tabla);
+     }            
+     $datos=$query->result();
+     
      // ENCABEZADOS DE TABLA     
      $tabla.='<table class="TablaNivel1" style="font-size:.8em; max-width:1200px;" >';
      $tabla.='<thead>';
@@ -880,7 +862,7 @@ class Reportes_consolidados extends CI_Controller {
      $tabla.='ACTIVIDAD';
      $tabla.='</th>';
      $tabla.='<th style="width:50px; text-align:left" >';     
-     $tabla.='UNIDAD <br/>MEDIDA';
+     $tabla.='UNIDAD MEDIDA';
      $tabla.='</th>';
      $tabla.='<th style="width:80px; text-align:right" >';     
      $tabla.='ENE';
@@ -918,8 +900,8 @@ class Reportes_consolidados extends CI_Controller {
      $tabla.='<th style="width:80px; text-align:right" >';     
      $tabla.='DIC';     
      $tabla.='</th>';     
-     $tabla.='<th style="width:80px; " >';     
-     $tabla.='TOTAL<br/>ANUAL';     
+     $tabla.='<th style="width:80px; text-align:right" >';     
+     $tabla.='ANUAL';     
      $tabla.='</th>';     
      $tabla.='</tr>';
      $tabla.='</thead>';
@@ -932,7 +914,7 @@ class Reportes_consolidados extends CI_Controller {
            $tabla.='</tbody>';
            $tabla.='<tfoot>';
            $tabla.='<tr>';
-           $tabla.='<td colspan="2" >';
+           $tabla.='<td colspan="2" style="vertical-align:top">';
            $tabla.='T O T A L E S';
            $tabla.='</td>';
            $tabla.='<td>';
@@ -996,10 +978,10 @@ class Reportes_consolidados extends CI_Controller {
        else
        {      
            $tabla.='<tr class="Resaltado">';      
-           $tabla.='<td rowspan="2" style="padding-right:0px">';
+           $tabla.='<td rowspan="2" style="padding-right:0px; vertical-align:top">';
            $tabla.=$p->cod_act;
            $tabla.='</td>';
-           $tabla.='<td rowspan="2" style="text-align:left">';
+           $tabla.='<td rowspan="2" style="text-align:left; vertical-align:top">';
            $tabla.=$p->actividad;
            $tabla.='</td>';
            $tabla.='<td style="text-align:left">';
@@ -1095,5 +1077,19 @@ class Reportes_consolidados extends CI_Controller {
     
     die($tabla);
   }    
+  
+  function menuReportePlan()
+  {
+    if (!$this->input->is_ajax_request()) die('Acceso Denegado');//Si la peticion NO vino por AJAX
+     
+    $id_proyecto = $this->input->post('id_proyecto');
+    
+    $proyecto = $this->Proyectos->obtener_proyecto($id_proyecto);
+    if (!$proyecto) die('ERROR: PROYECTO NO EXISTE');
+    
+    $data['p'] = $proyecto;   
+    
+    $this->load->view('reportes/menuReporteProyPlan',$data);      
+  }
   
 }

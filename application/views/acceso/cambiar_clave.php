@@ -51,7 +51,7 @@
       <tfoot>
           <tr>
               <td colspan="2">
-                <div class="BotonIco" onclick="javascript:window.location='../plan_productos'" title="Cancelar">
+                <div class="BotonIco" onclick="javascript:window.location='../ejecucion_productos'" title="Cancelar">
                 <?php echo img(base_url().'imagenes/cancel.png');?>                    
                 <a href="#" tabindex="5">Cancelar</a></div>
                 <?php

@@ -587,33 +587,15 @@ class Plan_productos extends CI_Controller {
        // ORDINARIO/EXTRA-ORDINARIO
             if ($sp['es_extraordinario']=='t')
             {
-                $datos=array(
-                            'img'  =>base_url()."imagenes/medalla.png",
-                            'span' => 'Sub-Producto Extraordinario');
+                $data.='<img src="'.base_url().'imagenes/medalla.png"/>';
+                $data.='<span>&nbsp;Sub-Producto Extraordinario</span><br/>';                      
             }
-            else
-            {
-                $datos=array(
-                            'img'  =>base_url()."imagenes/lego.png",
-                           'span'  => 'Sub-Producto Ordinario');
-            }         
-       $data.='<img src="'.$datos['img'].'"/>';
-       $data.='<span>&nbsp;'.$datos['span'].'</span><br/>';
        // BOTON TRAMITE/NO TRAMITE
             if ($sp['es_tramite']=='t')
             {
-                $datos=array(
-                            'img'  =>base_url()."imagenes/tramite.png",
-                            'span' => 'Trámite Administrativo a Terceros');                       
-            }
-            else
-            {
-                $datos=array(
-                            'img'  =>base_url()."imagenes/notramite.png",
-                            'span' => 'No es Trámite Administrativo a Terceros');
-            }                  
-       $data.='<img src="'.$datos['img'].'"/>';
-       $data.='<span>&nbsp;'.$datos['span'].'</span><br/>';
+                $data.='<img src="'.  base_url().'imagenes/tramite.png"/>';
+                $data.='<span>&nbsp;Trámite Administrativo a Terceros</span><br/>';                
+            }            
        $data.='</td></tr>';
        $data.='</tbody>';
        $data.='<tfoot>';
